@@ -43,6 +43,15 @@ class Court extends Model
     }
 
     /**
+     * A court can be booked only when it is active AND its owner is able to
+     * accept bookings (active subscription + completed Connect onboarding).
+     */
+    public function isBookable(): bool
+    {
+        return $this->is_active && $this->venue->owner->canAcceptBookings();
+    }
+
+    /**
      * Specific dates this court is closed.
      */
     public function blockedDates(): HasMany

@@ -74,6 +74,15 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
+     * An owner can accept bookings only when they have an active subscription
+     * AND have completed Stripe Connect onboarding (so they can be paid out).
+     */
+    public function canAcceptBookings(): bool
+    {
+        return $this->subscribed('default') && $this->connect_onboarded;
+    }
+
+    /**
      * Get the user's initials
      */
     public function initials(): string
