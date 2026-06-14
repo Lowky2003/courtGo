@@ -32,5 +32,13 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- Keep Stripe disabled in tests so the suite is deterministic regardless of .env:
+             empty secrets force "demo mode" and make webhook controllers skip signature checks. -->
+        <env name="STRIPE_KEY" value=""/>
+        <env name="STRIPE_SECRET" value=""/>
+        <env name="STRIPE_WEBHOOK_SECRET" value=""/>
+        <env name="STRIPE_CONNECT_WEBHOOK_SECRET" value=""/>
+        <env name="STRIPE_BOOKING_WEBHOOK_SECRET" value=""/>
+        <env name="STRIPE_PRICE_ID" value=""/>
     </php>
 </phpunit>

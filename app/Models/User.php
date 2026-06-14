@@ -74,6 +74,14 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
+     * Bookings this user made as a customer.
+     */
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class, 'customer_id');
+    }
+
+    /**
      * An owner can accept bookings only when they have an active subscription
      * AND have completed Stripe Connect onboarding (so they can be paid out).
      */

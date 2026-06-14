@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\GoogleController;
+use App\Http\Controllers\BookingController;
 use App\Http\Controllers\Owner\BillingController;
 use Illuminate\Support\Facades\Route;
 
@@ -8,6 +9,16 @@ Route::view('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
+});
+
+// Customer: browse, book & pay, my bookings
+Route::middleware('auth')->group(function () {
+    Route::get('/courts', \App\Livewire\Browse::class)->name('courts.browse');
+    Route::get('/courts/{court}', \App\Livewire\CourtShow::class)->name('courts.show');
+    Route::get('/courts/{court}/sessions/{session}/book', [BookingController::class, 'checkout'])->name('bookings.checkout');
+    Route::get('/bookings/{booking}/success', [BookingController::class, 'success'])->name('bookings.success');
+    Route::get('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+    Route::get('/my-bookings', \App\Livewire\MyBookings::class)->name('bookings.mine');
 });
 
 // Owner area — managing venues and courts (owners only)

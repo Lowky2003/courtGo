@@ -52,6 +52,21 @@ class Court extends Model
     }
 
     /**
+     * Limit to courts customers can actually book: active, with a live owner
+     * (Connect-onboarded + an active/trialing subscription).
+     */
+    public function scopeBookable($query)
+    {
+        return $query->where('is_active', true)
+            ->whereHas('venue.owner', function ($owner) {
+                $owner->where('connect_onboarded', true)
+                    ->whereHas('subscriptions', function ($sub) {
+                        $sub->where('type', 'default')->whereIn('stripe_status', ['active', 'trialing']);
+                    });
+            });
+    }
+
+    /**
      * Specific dates this court is closed.
      */
     public function blockedDates(): HasMany

@@ -24,6 +24,15 @@
                             {{ __('Billing') }}
                         </flux:sidebar.item>
                     @endif
+
+                    @if (auth()->user()?->role === \App\Enums\UserRole::Customer)
+                        <flux:sidebar.item icon="magnifying-glass" :href="route('courts.browse')" :current="request()->routeIs('courts.*')" wire:navigate>
+                            {{ __('Find a Court') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="ticket" :href="route('bookings.mine')" :current="request()->routeIs('bookings.mine')" wire:navigate>
+                            {{ __('My Bookings') }}
+                        </flux:sidebar.item>
+                    @endif
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 

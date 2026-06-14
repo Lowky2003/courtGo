@@ -21,8 +21,22 @@ class OwnerUserSeeder extends Seeder
                 'password' => Hash::make('password'),
                 'role' => UserRole::Owner,
                 'email_verified_at' => now(),
+                // Demo: mark the owner "live" so their courts are bookable without real Stripe.
+                'connect_onboarded' => true,
+                'stripe_connect_account_id' => 'acct_demo',
             ],
         );
+
+        // Demo: a fake active subscription so canAcceptBookings() is true.
+        if ($owner->subscriptions()->doesntExist()) {
+            $owner->subscriptions()->create([
+                'type' => 'default',
+                'stripe_id' => 'sub_demo_'.$owner->id,
+                'stripe_status' => 'active',
+                'stripe_price' => 'price_demo',
+                'quantity' => 1,
+            ]);
+        }
 
         // Give the demo owner a sample venue with a few courts (only if they have none yet).
         if ($owner->venues()->doesntExist()) {
