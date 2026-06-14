@@ -60,18 +60,17 @@ For v1, one role per user (an owner account is separate from a customer account)
 | Interactive UI | **Livewire 4 + Tailwind CSS 4 + Flux UI** | Build the calendar/dashboards in mostly-PHP; Alpine.js is bundled with Livewire. |
 | Auth scaffold | **Official Laravel Livewire starter kit** (Fortify-based) | Ready-made login, register, password reset, email verification. **Not Laravel Breeze** (retired for Laravel 12+). 2FA is on by default in Fortify — can be disabled. |
 | Google login | **Laravel Socialite** | "Sign in with Google" — wired manually (redirect + callback routes) since the starter kit uses Fortify. (Alt: WorkOS AuthKit variant for built-in social login, needs a WorkOS account.) |
-| Database (dev) | **SQLite** | Zero-setup, default in new Laravel, works out of the box with Herd. Supports partial unique indexes (clean double-booking guard). |
-| Database (production) | **PostgreSQL** (preferred) or **MySQL** | Switch is mostly config + re-run migrations. Postgres has the cleanest concurrency features; MySQL needs the generated-column trick (see §7). |
+| Database | **MySQL 8** — development **and** production | Used throughout (per preference). Needs a local install on Windows: Herd Pro's managed database, or a standalone MySQL (e.g. MySQL Community Server / Laragon). PostgreSQL is an easy drop-in alternative (cleaner partial-index support) if preferred later. |
 | Owner subscriptions | **Laravel Cashier 16 (Stripe Billing)** | Recurring monthly subscriptions. Paid by **card** (FPX/GrabPay can't do recurring). |
 | Booking payments → owner | **Stripe Connect — destination charges** via the **stripe-php** that Cashier ships (v17.x) | `application_fee_amount = 0` routes 100% to the owner. **Do not** separately pin a newer `stripe/stripe-php` — use `Cashier::stripe()` / one `StripeClient`. |
-| Local dev (Windows) | **Laravel Herd for Windows** (v1.28+, free tier) | Bundles PHP + nginx + Node. Installer needs administrator rights. SQLite works on the free tier (managed MySQL is a Herd Pro feature). |
+| Local dev (Windows) | **Laravel Herd for Windows** (v1.28+) | Bundles PHP + nginx + Node. Installer needs administrator rights. For MySQL: use Herd Pro's managed database, or install MySQL standalone (e.g. MySQL Community Server / Laragon). |
 | Going live (later) | **Laravel Cloud** or **Railway** | Provides managed Postgres/MySQL; flip Stripe to live mode. |
 
 **Key stack decisions & why:**
 - **Livewire over React/Vue** — beginner stays in PHP.
 - **New Livewire starter kit over Breeze** — Breeze is retired for Laravel 12+; the new kit is the supported, documented path (Fortify + Flux UI + Tailwind 4).
 - **Cashier for subscriptions, stripe-php (Connect) for payouts** — Cashier doesn't handle marketplace payouts; they coexist as long as we use the single stripe-php Cashier installs.
-- **SQLite in dev, Postgres/MySQL in prod** — least setup for a beginner now, production-grade later.
+- **MySQL throughout (dev + prod)** — most hosting/tutorial support in Malaysia; PostgreSQL is an easy swap if ever wanted.
 
 ---
 
@@ -173,8 +172,8 @@ available sessions =
 
 ### No-double-booking — defense in depth (three layers)
 1. **Unique index** = the unbreakable backstop (DB physically refuses a 2nd active booking for the same slot).
-   - **SQLite / PostgreSQL:** partial unique index — `UNIQUE (court_id, booking_date, start_time) WHERE status IN ('pending','confirmed')`.
-   - **MySQL:** no partial indexes — use a generated column: `active_flag = 1` for `pending/confirmed` else `NULL`, then `UNIQUE (court_id, booking_date, start_time, active_flag)` (MySQL allows multiple NULLs).
+   - **MySQL (our DB):** no partial indexes — use a generated column: `active_flag = 1` for `pending/confirmed` else `NULL`, then `UNIQUE (court_id, booking_date, start_time, active_flag)` (MySQL allows multiple NULLs, so cancelled/expired rows don't block re-booking).
+   - *(PostgreSQL alternative: a partial unique index — `UNIQUE (court_id, booking_date, start_time) WHERE status IN ('pending','confirmed')`.)*
 2. **`lockForUpdate()` in a transaction** = clean serialized checks + friendly "unavailable" message.
 3. **Webhook-confirm-after-pay** = reserve before charging, finalize only on real payment success.
 
