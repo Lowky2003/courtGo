@@ -52,6 +52,9 @@
                                 </td>
                                 <td class="px-4 py-3">
                                     <div class="flex justify-end gap-2">
+                                        <flux:button size="sm" variant="primary" :href="route('owner.courts.schedule', $court)" wire:navigate>
+                                            Schedule
+                                        </flux:button>
                                         <flux:button size="sm" variant="ghost" wire:click="toggleActive({{ $court->id }})">
                                             {{ $court->is_active ? 'Close' : 'Open' }}
                                         </flux:button>
