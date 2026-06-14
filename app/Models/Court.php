@@ -58,4 +58,12 @@ class Court extends Model
     {
         return $this->hasMany(BlockedDate::class);
     }
+
+    /**
+     * Bookings made against this court.
+     */
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
+    }
 }
