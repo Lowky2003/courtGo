@@ -20,4 +20,8 @@ Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->grou
 Route::get('/auth/google/redirect', [GoogleController::class, 'redirect'])->name('google.redirect');
 Route::get('/auth/google/callback', [GoogleController::class, 'callback'])->name('google.callback');
 
+// Stripe Connect webhook (account.updated → owner onboarding status). Separate from Cashier's billing webhook.
+Route::post('/stripe/connect/webhook', [\App\Http\Controllers\StripeConnectWebhookController::class, 'handle'])
+    ->name('stripe.connect.webhook');
+
 require __DIR__.'/settings.php';
