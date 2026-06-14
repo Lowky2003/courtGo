@@ -33,4 +33,8 @@ Route::get('/auth/google/callback', [GoogleController::class, 'callback'])->name
 Route::post('/stripe/connect/webhook', [\App\Http\Controllers\StripeConnectWebhookController::class, 'handle'])
     ->name('stripe.connect.webhook');
 
+// Stripe Checkout webhook for BOOKING payments (confirms the booking once paid).
+Route::post('/stripe/bookings/webhook', [\App\Http\Controllers\BookingWebhookController::class, 'handle'])
+    ->name('stripe.bookings.webhook');
+
 require __DIR__.'/settings.php';

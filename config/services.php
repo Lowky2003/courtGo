@@ -46,6 +46,8 @@ return [
         'price_id' => env('STRIPE_PRICE_ID'),
         // Signing secret for the SEPARATE Connect webhook endpoint (whsec_...).
         'connect_webhook_secret' => env('STRIPE_CONNECT_WEBHOOK_SECRET'),
+        // Signing secret for the booking-payment Checkout webhook endpoint (whsec_...).
+        'booking_webhook_secret' => env('STRIPE_BOOKING_WEBHOOK_SECRET'),
     ],
 
 ];
