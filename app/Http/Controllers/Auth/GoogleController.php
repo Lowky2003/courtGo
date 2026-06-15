@@ -11,6 +11,12 @@ class GoogleController extends Controller
 {
     public function redirect()
     {
+        // Google isn't set up (no client id) — don't bounce the user to a Google 400.
+        if (! config('services.google.client_id')) {
+            return redirect()->route('login')
+                ->withErrors(['email' => 'Google sign-in is not configured yet. Please use email and password.']);
+        }
+
         return Socialite::driver('google')->redirect();
     }
 

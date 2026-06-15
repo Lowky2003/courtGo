@@ -51,11 +51,13 @@
             </div>
         </form>
 
-        <flux:separator :text="__('or')" />
+        @if (config('services.google.client_id'))
+            <flux:separator :text="__('or')" />
 
-        <flux:button :href="route('google.redirect')" variant="outline" class="w-full">
-            {{ __('Sign in with Google') }}
-        </flux:button>
+            <flux:button :href="route('google.redirect')" variant="outline" class="w-full">
+                {{ __('Sign in with Google') }}
+            </flux:button>
+        @endif
 
         <div class="space-x-1 text-sm text-center rtl:space-x-reverse text-zinc-600 dark:text-zinc-400">
             <span>{{ __('Don\'t have an account?') }}</span>
