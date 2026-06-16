@@ -7,7 +7,8 @@
     {{-- Search --}}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <flux:input wire:model.live.debounce.300ms="name" label="Place name" placeholder="e.g. Sunway Hall" />
-        <flux:select wire:model.live="sport" label="Sport" placeholder="Any sport">
+        <flux:select wire:model.live="sport" label="Sport">
+            <flux:select.option value="">Any sport</flux:select.option>
             @foreach ($sports as $s)
                 <flux:select.option value="{{ $s }}">{{ $s }}</flux:select.option>
             @endforeach
