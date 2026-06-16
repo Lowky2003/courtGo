@@ -21,20 +21,12 @@ class StripeConnectService
             return $owner->stripe_connect_account_id;
         }
 
+        // Malaysia only allows Connect accounts where STRIPE is loss-liable, which
+        // is the "Standard" account model (Express would make the platform liable).
         $account = Cashier::stripe()->accounts->create([
+            'type' => 'standard',
             'country' => 'MY',
             'email' => $owner->email,
-            'business_type' => 'company',
-            'capabilities' => [
-                'card_payments' => ['requested' => true],
-                'transfers' => ['requested' => true],
-            ],
-            'controller' => [
-                'stripe_dashboard' => ['type' => 'express'],
-                'fees' => ['payer' => 'application'],
-                'losses' => ['payments' => 'stripe'],
-                'requirement_collection' => 'stripe',
-            ],
         ]);
 
         $owner->update(['stripe_connect_account_id' => $account->id]);
