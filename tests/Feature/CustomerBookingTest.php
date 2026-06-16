@@ -48,6 +48,18 @@ test('the browse page hides places whose owner is not live', function () {
     $this->actingAs(User::factory()->create())->get('/courts')->assertDontSee('Hidden Hall');
 });
 
+test('the browse page can filter places by name', function () {
+    $a = liveCourtSession(Carbon::parse('2026-07-06'));
+    $a->court->venue->update(['name' => 'Alpha Hall']);
+    $b = liveCourtSession(Carbon::parse('2026-07-06'));
+    $b->court->venue->update(['name' => 'Beta Hall']);
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('courts.browse', ['name' => 'Alpha']))
+        ->assertSee('Alpha Hall')
+        ->assertDontSee('Beta Hall');
+});
+
 test('the venue page shows available courts for the chosen date', function () {
     $date = Carbon::parse('2026-07-06');
     $session = liveCourtSession($date);

@@ -5,8 +5,13 @@
     </div>
 
     {{-- Search --}}
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <flux:input wire:model.live.debounce.300ms="sport" label="Sport" placeholder="e.g. Badminton" />
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <flux:input wire:model.live.debounce.300ms="name" label="Place name" placeholder="e.g. Sunway Hall" />
+        <flux:select wire:model.live="sport" label="Sport" placeholder="Any sport">
+            @foreach ($sports as $s)
+                <flux:select.option value="{{ $s }}">{{ $s }}</flux:select.option>
+            @endforeach
+        </flux:select>
         <flux:input wire:model.live.debounce.300ms="city" label="City" placeholder="e.g. Subang Jaya" />
     </div>
 
