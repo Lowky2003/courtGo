@@ -32,7 +32,7 @@ test('a guest is redirected to login from browse', function () {
     $this->get('/courts')->assertRedirect('/login');
 });
 
-test('the browse page shows a bookable court', function () {
+test('the browse page lists the place (venue), not individual courts', function () {
     $session = liveCourtSession(Carbon::parse('2026-07-06'));
 
     $this->actingAs(User::factory()->create())->get('/courts')
@@ -40,12 +40,22 @@ test('the browse page shows a bookable court', function () {
         ->assertSee($session->court->venue->name);
 });
 
-test('the browse page hides courts whose owner is not live', function () {
+test('the browse page hides places whose owner is not live', function () {
     $owner = User::factory()->create(['role' => UserRole::Owner]); // not subscribed/onboarded
-    $venue = Venue::factory()->for($owner, 'owner')->create();
-    Court::factory()->for($venue)->create(['is_active' => true, 'name' => 'Hidden Court']);
+    $venue = Venue::factory()->for($owner, 'owner')->create(['name' => 'Hidden Hall']);
+    Court::factory()->for($venue)->create(['is_active' => true]);
 
-    $this->actingAs(User::factory()->create())->get('/courts')->assertDontSee('Hidden Court');
+    $this->actingAs(User::factory()->create())->get('/courts')->assertDontSee('Hidden Hall');
+});
+
+test('the venue page lists its bookable courts', function () {
+    $session = liveCourtSession(Carbon::parse('2026-07-06'));
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('venues.show', $session->court->venue))
+        ->assertOk()
+        ->assertSee($session->court->venue->name)
+        ->assertSee($session->court->name);
 });
 
 test('a customer can book a session (demo mode confirms it)', function () {

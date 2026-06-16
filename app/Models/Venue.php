@@ -36,4 +36,12 @@ class Venue extends Model
     {
         return $this->hasMany(Court::class);
     }
+
+    /**
+     * Limit to venues that have at least one bookable court (active + live owner).
+     */
+    public function scopeBookable($query)
+    {
+        return $query->whereHas('courts', fn ($court) => $court->bookable());
+    }
 }

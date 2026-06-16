@@ -14,6 +14,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // Customer: browse, book & pay, my bookings
 Route::middleware('auth')->group(function () {
     Route::get('/courts', \App\Livewire\Browse::class)->name('courts.browse');
+    Route::get('/venues/{venue}', \App\Livewire\VenueShow::class)->name('venues.show');
     Route::get('/courts/{court}', \App\Livewire\CourtShow::class)->name('courts.show');
     Route::get('/courts/{court}/sessions/{session}/book', [BookingController::class, 'checkout'])->name('bookings.checkout');
     Route::get('/bookings/{booking}/success', [BookingController::class, 'success'])->name('bookings.success');

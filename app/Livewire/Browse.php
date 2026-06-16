@@ -2,7 +2,7 @@
 
 namespace App\Livewire;
 
-use App\Models\Court;
+use App\Models\Venue;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -20,14 +20,17 @@ class Browse extends Component
 
     public function render()
     {
-        $courts = Court::query()
+        $venues = Venue::query()
             ->bookable()
-            ->when($this->sport, fn ($q) => $q->where('sport', 'like', '%'.$this->sport.'%'))
-            ->when($this->city, fn ($q) => $q->whereHas('venue', fn ($v) => $v->where('city', 'like', '%'.$this->city.'%')))
-            ->with('venue')
-            ->orderBy('sport')
+            ->when($this->city, fn ($q) => $q->where('city', 'like', '%'.$this->city.'%'))
+            ->when($this->sport, fn ($q) => $q->whereHas(
+                'courts',
+                fn ($c) => $c->bookable()->where('sport', 'like', '%'.$this->sport.'%')
+            ))
+            ->with(['courts' => fn ($q) => $q->bookable()])
+            ->orderBy('name')
             ->get();
 
-        return view('livewire.browse', ['courts' => $courts]);
+        return view('livewire.browse', ['venues' => $venues]);
     }
 }

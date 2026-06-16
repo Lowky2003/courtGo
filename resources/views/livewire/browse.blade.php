@@ -1,7 +1,7 @@
 <div class="space-y-8 p-6 max-w-5xl mx-auto w-full">
     <div class="space-y-1">
         <flux:heading size="xl">Find a Court</flux:heading>
-        <flux:text>Search courts you can book right now.</flux:text>
+        <flux:text>Browse places you can book, then pick a court inside.</flux:text>
     </div>
 
     {{-- Search --}}
@@ -10,22 +10,26 @@
         <flux:input wire:model.live.debounce.300ms="city" label="City" placeholder="e.g. Subang Jaya" />
     </div>
 
-    {{-- Results --}}
-    @if ($courts->isEmpty())
+    {{-- Venues (places) --}}
+    @if ($venues->isEmpty())
         <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-8 text-center">
-            <flux:text>No bookable courts found. Try a different search — or an owner may still need to go live.</flux:text>
+            <flux:text>No places found. Try a different search.</flux:text>
         </div>
     @else
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            @foreach ($courts as $court)
-                <a href="{{ route('courts.show', $court) }}" wire:navigate wire:key="court-{{ $court->id }}"
+            @foreach ($venues as $venue)
+                <a href="{{ route('venues.show', $venue) }}" wire:navigate wire:key="venue-{{ $venue->id }}"
                    class="block rounded-xl border border-zinc-200 dark:border-zinc-700 p-5 hover:border-blue-400 transition">
-                    <flux:badge size="sm" color="blue">{{ $court->sport }}</flux:badge>
-                    <div class="mt-2 font-semibold">{{ $court->venue->name }}</div>
-                    <div class="text-sm text-zinc-500">{{ $court->name }}</div>
-                    <div class="text-sm text-zinc-500">📍 {{ $court->venue->city }}, {{ $court->venue->state }}</div>
+                    <div class="font-semibold text-lg">{{ $venue->name }}</div>
+                    <div class="text-sm text-zinc-500">📍 {{ $venue->city }}, {{ $venue->state }}</div>
+                    <div class="mt-3 flex flex-wrap gap-1">
+                        @foreach ($venue->courts->pluck('sport')->unique() as $sport)
+                            <flux:badge size="sm" color="blue">{{ $sport }}</flux:badge>
+                        @endforeach
+                    </div>
+                    <div class="mt-3 text-sm text-zinc-500">{{ $venue->courts->count() }} court(s) available</div>
                     <div class="mt-3">
-                        <flux:button size="sm" variant="primary">View &amp; book</flux:button>
+                        <flux:button size="sm" variant="primary">View courts</flux:button>
                     </div>
                 </a>
             @endforeach
