@@ -56,6 +56,38 @@ class BookingController extends Controller
         return redirect()->route('bookings.success', $booking)->with('demo_paid', true);
     }
 
+    /**
+     * Resume payment for an existing pending booking (the "Continue payment" button).
+     */
+    public function pay(Request $request, Booking $booking, BookingPaymentService $payments)
+    {
+        abort_unless($booking->customer_id === $request->user()->id, 403);
+
+        if (! $booking->awaitingPayment()) {
+            return redirect()->route('bookings.mine')
+                ->with('booking_error', 'This booking can no longer be paid (the hold expired).');
+        }
+
+        if (config('cashier.secret')) {
+            $url = $payments->checkoutUrl(
+                $booking,
+                route('bookings.success', $booking).'?session_id={CHECKOUT_SESSION_ID}',
+                route('bookings.cancel', $booking),
+            );
+
+            return redirect($url);
+        }
+
+        // Demo mode (no Stripe keys): confirm immediately.
+        $booking->update([
+            'status' => BookingStatus::Confirmed,
+            'payment_status' => 'paid',
+            'processed_at' => now(),
+        ]);
+
+        return redirect()->route('bookings.success', $booking)->with('demo_paid', true);
+    }
+
     public function success(Booking $booking)
     {
         abort_unless($booking->customer_id === auth()->id(), 403);

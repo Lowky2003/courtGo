@@ -53,4 +53,20 @@ class Booking extends Model
     {
         return $this->belongsTo(SessionTemplate::class);
     }
+
+    /** Pending and the payment hold is still valid — customer can still pay. */
+    public function awaitingPayment(): bool
+    {
+        return $this->status === BookingStatus::Pending
+            && $this->hold_expires_at
+            && $this->hold_expires_at->isFuture();
+    }
+
+    /** Pending but the hold window has passed — effectively expired. */
+    public function holdExpired(): bool
+    {
+        return $this->status === BookingStatus::Pending
+            && $this->hold_expires_at
+            && $this->hold_expires_at->isPast();
+    }
 }

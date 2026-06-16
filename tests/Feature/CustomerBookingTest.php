@@ -101,6 +101,45 @@ test('booking the same slot twice is rejected', function () {
     expect(Booking::where('court_id', $session->court_id)->count())->toBe(1);
 });
 
+test('a customer can resume payment for a pending booking', function () {
+    config()->set('cashier.secret', null); // demo mode confirms
+    $customer = User::factory()->create();
+    $booking = Booking::factory()->pending()->create(['customer_id' => $customer->id]);
+
+    $this->actingAs($customer)->get(route('bookings.pay', $booking))->assertRedirect();
+
+    expect($booking->fresh()->status)->toBe(BookingStatus::Confirmed);
+});
+
+test('a customer cannot resume payment for an expired hold', function () {
+    $customer = User::factory()->create();
+    $booking = Booking::factory()->pending()->create([
+        'customer_id' => $customer->id,
+        'hold_expires_at' => now()->subMinute(),
+    ]);
+
+    $this->actingAs($customer)->get(route('bookings.pay', $booking))
+        ->assertRedirect(route('bookings.mine'));
+
+    expect($booking->fresh()->status)->toBe(BookingStatus::Pending);
+});
+
+test('my bookings can filter to awaiting payment', function () {
+    $customer = User::factory()->create();
+
+    $cVenue = Venue::factory()->create(['name' => 'Confirmed Venue']);
+    Booking::factory()->for(Court::factory()->for($cVenue)->create())
+        ->create(['customer_id' => $customer->id, 'status' => BookingStatus::Confirmed]);
+
+    $aVenue = Venue::factory()->create(['name' => 'Awaiting Venue']);
+    Booking::factory()->pending()->for(Court::factory()->for($aVenue)->create())
+        ->create(['customer_id' => $customer->id]);
+
+    $this->actingAs($customer)->get(route('bookings.mine', ['filter' => 'awaiting']))
+        ->assertSee('Awaiting Venue')
+        ->assertDontSee('Confirmed Venue');
+});
+
 test('my bookings shows the customer booking', function () {
     config()->set('cashier.secret', null);
     $date = Carbon::parse('2026-07-06');
