@@ -5,12 +5,18 @@
     </div>
 
     {{-- Search --}}
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <flux:input wire:model.live.debounce.300ms="name" label="Place name" placeholder="e.g. Sunway Hall" />
         <flux:select wire:model.live="sport" label="Sport">
             <flux:select.option value="">Any sport</flux:select.option>
             @foreach ($sports as $s)
                 <flux:select.option value="{{ $s }}">{{ $s }}</flux:select.option>
+            @endforeach
+        </flux:select>
+        <flux:select wire:model.live="state" label="State">
+            <flux:select.option value="">Any state</flux:select.option>
+            @foreach ($states as $st)
+                <flux:select.option value="{{ $st }}">{{ $st }}</flux:select.option>
             @endforeach
         </flux:select>
         <flux:input wire:model.live.debounce.300ms="city" label="City" placeholder="e.g. Subang Jaya" />
@@ -32,32 +38,42 @@
                 @php($summary = $summaries[$venue->id])
                 <a href="{{ route('venues.show', ['venue' => $venue, 'date' => $displayDate->toDateString()]) }}"
                    wire:navigate wire:key="venue-{{ $venue->id }}"
-                   class="flex flex-col rounded-xl border border-zinc-200 dark:border-zinc-700 p-5 hover:border-blue-400 transition">
-                    <div class="font-semibold text-lg">{{ $venue->name }}</div>
-                    <div class="text-sm text-zinc-500">📍 {{ $venue->city }}, {{ $venue->state }}</div>
+                   class="flex flex-col overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700 hover:border-blue-400 transition">
+                    @if ($venue->imageUrl())
+                        <img src="{{ $venue->imageUrl() }}" alt="{{ $venue->name }}" class="h-40 w-full object-cover" />
+                    @else
+                        <div class="flex h-40 w-full items-center justify-center bg-zinc-100 text-zinc-400 dark:bg-zinc-800">
+                            <flux:icon name="photo" class="size-8" />
+                        </div>
+                    @endif
 
-                    <div class="mt-3 flex flex-wrap gap-1">
-                        @foreach ($venue->courts->pluck('sport')->unique() as $sport)
-                            <flux:badge size="sm" color="blue">{{ $sport }}</flux:badge>
-                        @endforeach
-                    </div>
+                    <div class="flex flex-1 flex-col p-5">
+                        <div class="font-semibold text-lg">{{ $venue->name }}</div>
+                        <div class="text-sm text-zinc-500">📍 {{ $venue->city }}, {{ $venue->state }}</div>
 
-                    <div class="mt-3 flex items-center justify-between text-sm">
-                        @if ($summary['price_from'] !== null)
-                            <span class="font-medium text-zinc-700 dark:text-zinc-300">from RM{{ number_format($summary['price_from'], 0) }}</span>
-                        @else
-                            <span></span>
-                        @endif
+                        <div class="mt-3 flex flex-wrap gap-1">
+                            @foreach ($venue->courts->pluck('sport')->unique() as $sport)
+                                <flux:badge size="sm" color="blue">{{ $sport }}</flux:badge>
+                            @endforeach
+                        </div>
 
-                        @if ($summary['available'] > 0)
-                            <span class="text-emerald-600 dark:text-emerald-400">{{ $summary['available'] }} session(s) available</span>
-                        @else
-                            <span class="text-zinc-400">Fully booked</span>
-                        @endif
-                    </div>
+                        <div class="mt-3 flex items-center justify-between text-sm">
+                            @if ($summary['price_from'] !== null)
+                                <span class="font-medium text-zinc-700 dark:text-zinc-300">from RM{{ number_format($summary['price_from'], 0) }}</span>
+                            @else
+                                <span></span>
+                            @endif
 
-                    <div class="mt-4">
-                        <flux:button size="sm" variant="primary">View courts</flux:button>
+                            @if ($summary['available'] > 0)
+                                <span class="text-emerald-600 dark:text-emerald-400">{{ $summary['available'] }} session(s) available</span>
+                            @else
+                                <span class="text-zinc-400">Fully booked</span>
+                            @endif
+                        </div>
+
+                        <div class="mt-4">
+                            <flux:button size="sm" variant="primary">View courts</flux:button>
+                        </div>
                     </div>
                 </a>
             @endforeach

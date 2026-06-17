@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Venue extends Model
 {
@@ -19,7 +20,30 @@ class Venue extends Model
         'address',
         'city',
         'state',
+        'image_path',
     ];
+
+    /**
+     * Clean up the uploaded image when a venue is deleted.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (Venue $venue) {
+            if ($venue->image_path) {
+                Storage::disk('public')->delete($venue->image_path);
+            }
+        });
+    }
+
+    /**
+     * Public URL of the venue's image, or null if it has none.
+     */
+    public function imageUrl(): ?string
+    {
+        return $this->image_path
+            ? Storage::disk('public')->url($this->image_path)
+            : null;
+    }
 
     /**
      * The owner (a user) who runs this venue.

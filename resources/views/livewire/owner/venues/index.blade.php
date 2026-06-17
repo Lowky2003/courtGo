@@ -12,7 +12,26 @@
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <flux:input wire:model="city" label="City" placeholder="Subang Jaya" />
-            <flux:input wire:model="state" label="State" placeholder="Selangor" />
+            <flux:select wire:model="state" label="State">
+                <flux:select.option value="">Choose a state…</flux:select.option>
+                @foreach (config('courtgo.states') as $st)
+                    <flux:select.option value="{{ $st }}">{{ $st }}</flux:select.option>
+                @endforeach
+            </flux:select>
+        </div>
+
+        {{-- One optional photo of the place, shown to customers. --}}
+        <div>
+            <flux:label>Photo (optional)</flux:label>
+            <input type="file" wire:model="image" accept="image/*"
+                   class="mt-1 block w-full text-sm text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-white hover:file:bg-blue-700 dark:text-zinc-300" />
+            <flux:error name="image" />
+
+            <div wire:loading wire:target="image" class="mt-2 text-sm text-zinc-500">Uploading…</div>
+
+            @if ($image)
+                <img src="{{ $image->temporaryUrl() }}" alt="Preview" class="mt-2 h-32 w-full max-w-xs rounded-lg object-cover" />
+            @endif
         </div>
 
         <flux:button type="submit" variant="primary">Add venue</flux:button>
@@ -38,7 +57,14 @@
                     <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
                         @foreach ($venues as $venue)
                             <tr wire:key="venue-{{ $venue->id }}">
-                                <td class="px-4 py-3 font-medium">{{ $venue->name }}</td>
+                                <td class="px-4 py-3 font-medium">
+                                    <div class="flex items-center gap-3">
+                                        @if ($venue->imageUrl())
+                                            <img src="{{ $venue->imageUrl() }}" alt="" class="h-10 w-10 rounded object-cover" />
+                                        @endif
+                                        {{ $venue->name }}
+                                    </div>
+                                </td>
                                 <td class="px-4 py-3 text-zinc-500">{{ $venue->city }}, {{ $venue->state }}</td>
                                 <td class="px-4 py-3 text-zinc-500">{{ $venue->courts_count }}</td>
                                 <td class="px-4 py-3">

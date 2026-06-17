@@ -3,14 +3,13 @@
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\Owner\BillingController;
-use App\Models\Court;
 use Illuminate\Support\Facades\Route;
 
-// Public landing page. Passes the list of bookable sports so the hero search
-// dropdown reflects what's actually available.
+// Public landing page. The hero search dropdown and sport tiles use the
+// curated sport list so categories stay consistent for customers.
 Route::get('/', function () {
     return view('welcome', [
-        'sports' => Court::query()->bookable()->orderBy('sport')->pluck('sport')->unique()->values(),
+        'sports' => collect(config('courtgo.sports')),
     ]);
 })->name('home');
 

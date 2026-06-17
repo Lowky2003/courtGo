@@ -1,6 +1,11 @@
 <div class="space-y-8 p-6 max-w-3xl mx-auto w-full">
     <div class="space-y-1">
         <flux:button size="sm" variant="ghost" :href="route('courts.browse')" wire:navigate icon="arrow-left">Back to search</flux:button>
+
+        @if ($venue->imageUrl())
+            <img src="{{ $venue->imageUrl() }}" alt="{{ $venue->name }}" class="mb-3 h-56 w-full rounded-xl object-cover" />
+        @endif
+
         <flux:heading size="xl">{{ $venue->name }}</flux:heading>
         <flux:text>📍 {{ $venue->address }}, {{ $venue->city }}, {{ $venue->state }}</flux:text>
         @if ($venue->description)

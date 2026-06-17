@@ -2,7 +2,6 @@
 
 namespace App\Livewire;
 
-use App\Models\Court;
 use App\Models\Venue;
 use App\Services\AvailabilityService;
 use Illuminate\Support\Carbon;
@@ -28,20 +27,24 @@ class Browse extends Component
     public string $city = '';
 
     #[Url]
+    public string $state = '';
+
+    #[Url]
     public string $date = '';
 
     /** Jump back to the first page whenever a filter changes. */
     public function updated(string $property): void
     {
-        if (in_array($property, ['name', 'sport', 'city', 'date'], true)) {
+        if (in_array($property, ['name', 'sport', 'city', 'state', 'date'], true)) {
             $this->resetPage();
         }
     }
 
     public function render()
     {
-        // Distinct sports across bookable courts — used to populate the dropdown.
-        $sports = Court::query()->bookable()->orderBy('sport')->pluck('sport')->unique()->values();
+        // Curated sport + state lists keep the categories consistent for customers.
+        $sports = config('courtgo.sports');
+        $states = config('courtgo.states');
 
         // Which day to show availability for. Defaults to tomorrow (matching the
         // venue page) and falls back gracefully if a bad date is in the URL.
@@ -55,6 +58,7 @@ class Browse extends Component
             ->bookable()
             ->when($this->name, fn ($q) => $q->where('name', 'like', '%'.$this->name.'%'))
             ->when($this->city, fn ($q) => $q->where('city', 'like', '%'.$this->city.'%'))
+            ->when($this->state, fn ($q) => $q->where('state', $this->state))
             ->when($this->sport, fn ($q) => $q->whereHas(
                 'courts',
                 fn ($c) => $c->bookable()->where('sport', $this->sport)
@@ -84,6 +88,7 @@ class Browse extends Component
         return view('livewire.browse', [
             'venues' => $venues,
             'sports' => $sports,
+            'states' => $states,
             'summaries' => $summaries,
             'displayDate' => $date, // Carbon — named to avoid clashing with the $date URL property
         ]);

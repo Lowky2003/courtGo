@@ -1,4 +1,6 @@
 <div class="space-y-6 p-6 max-w-3xl mx-auto w-full">
+    <flux:button size="sm" variant="ghost" :href="route('home')" wire:navigate icon="arrow-left">Back to homepage</flux:button>
+
     <div class="flex items-center justify-between gap-4 flex-wrap">
         <flux:heading size="xl">My Bookings</flux:heading>
         <flux:select wire:model.live="filter" class="max-w-xs">

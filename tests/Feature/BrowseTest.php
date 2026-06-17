@@ -48,6 +48,22 @@ test('the chosen date carries through to the venue link', function () {
         ->assertSee(route('venues.show', ['venue' => $venue, 'date' => $date->toDateString()]), escape: false);
 });
 
+test('the browse page filters venues by state', function () {
+    $date = Carbon::today()->addDays(8);
+
+    $selangor = browseLiveVenue($date);
+    $selangor->update(['name' => 'Selangor Arena', 'state' => 'Selangor']);
+
+    $penang = browseLiveVenue($date);
+    $penang->update(['name' => 'Penang Arena', 'state' => 'Penang']);
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('courts.browse', ['state' => 'Selangor', 'date' => $date->toDateString()]))
+        ->assertOk()
+        ->assertSee('Selangor Arena')
+        ->assertDontSee('Penang Arena');
+});
+
 test('a date with no matching session shows fully booked', function () {
     $date = Carbon::today()->addDays(8);
     browseLiveVenue($date); // session is on $date's weekday only

@@ -118,7 +118,7 @@
                     @foreach ($sports as $s)
                         <a href="{{ route('courts.browse', ['sport' => $s]) }}"
                            class="flex items-center gap-2 rounded-full border border-zinc-200 px-4 py-2 text-sm font-medium hover:border-blue-400 hover:text-blue-600 dark:border-zinc-800 dark:hover:text-blue-400">
-                            <flux:icon :name="$sportIcons[$s] ?? 'map-pin'" class="size-4 text-blue-500" />
+                            <flux:icon :name="$sportIcons[$s] ?? 'trophy'" class="size-4 text-blue-500" />
                             {{ $s }}
                         </a>
                     @endforeach

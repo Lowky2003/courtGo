@@ -5,6 +5,7 @@ namespace App\Livewire\Owner\Venues;
 use App\Models\Venue;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -30,6 +31,7 @@ class Courts extends Component
 
     // Step 1: basics + auto-naming
     public string $sport = '';
+    public string $customSport = ''; // used when $sport === 'Other'
     public int $count = 1;
     public string $namingStyle = 'number'; // number | letter
     public string $prefix = 'Court';
@@ -68,9 +70,15 @@ class Courts extends Component
     private function resetWizard(): void
     {
         $this->reset([
-            'step', 'sport', 'count', 'namingStyle', 'prefix',
+            'step', 'sport', 'customSport', 'count', 'namingStyle', 'prefix',
             'startNumber', 'startLetter', 'scheduleMode', 'sessions', 'courtSessions',
         ]);
+    }
+
+    /** The sport to save — the chosen list value, or the custom name when "Other". */
+    public function effectiveSport(): string
+    {
+        return $this->sport === 'Other' ? trim($this->customSport) : $this->sport;
     }
 
     /** The court names that will be created, e.g. ["Court 1", "Court 2"] or ["Court A", "Court B"]. */
@@ -96,8 +104,12 @@ class Courts extends Component
 
     public function toStep2(): void
     {
+        // Normalise first so a whitespace-only custom sport fails required_if.
+        $this->customSport = trim($this->customSport);
+
         $this->validate([
-            'sport' => 'required|string|max:255',
+            'sport' => ['required', 'string', Rule::in([...config('courtgo.sports'), 'Other'])],
+            'customSport' => 'required_if:sport,Other|nullable|string|max:255',
             'count' => 'required|integer|min:1|max:50',
             'namingStyle' => 'required|in:number,letter',
             'prefix' => 'nullable|string|max:50',
@@ -206,7 +218,7 @@ class Courts extends Component
             foreach ($names as $i => $name) {
                 $court = $this->venue->courts()->create([
                     'name' => $name,
-                    'sport' => $this->sport,
+                    'sport' => $this->effectiveSport(),
                     'is_active' => true,
                 ]);
 

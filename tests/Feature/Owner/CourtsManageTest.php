@@ -91,6 +91,68 @@ test('going back and forward keeps per-court schedule edits', function () {
         ->assertSet('courtSessions.0.0.start_time', '18:00'); // edit preserved
 });
 
+test('the wizard accepts an Other custom sport', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->for($owner, 'owner')->create();
+
+    Livewire::actingAs($owner)
+        ->test(Courts::class, ['venue' => $venue])
+        ->call('startWizard')
+        ->set('sport', 'Other')
+        ->set('customSport', 'Frisbee')
+        ->set('count', 1)
+        ->set('namingStyle', 'number')
+        ->call('toStep2')
+        ->assertHasNoErrors()
+        ->set('scheduleMode', 'same')
+        ->call('toStep3')
+        ->call('create')
+        ->assertHasNoErrors();
+
+    expect($venue->courts()->first()->sport)->toBe('Frisbee');
+});
+
+test('the wizard rejects a sport outside the curated list', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->for($owner, 'owner')->create();
+
+    Livewire::actingAs($owner)
+        ->test(Courts::class, ['venue' => $venue])
+        ->call('startWizard')
+        ->set('sport', 'Quidditch') // not in config('courtgo.sports') and not "Other"
+        ->set('count', 1)
+        ->call('toStep2')
+        ->assertHasErrors(['sport']);
+});
+
+test('an Other sport cannot be only whitespace', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->for($owner, 'owner')->create();
+
+    Livewire::actingAs($owner)
+        ->test(Courts::class, ['venue' => $venue])
+        ->call('startWizard')
+        ->set('sport', 'Other')
+        ->set('customSport', '   ')
+        ->set('count', 1)
+        ->call('toStep2')
+        ->assertHasErrors(['customSport']);
+});
+
+test('choosing Other requires a custom sport name', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->for($owner, 'owner')->create();
+
+    Livewire::actingAs($owner)
+        ->test(Courts::class, ['venue' => $venue])
+        ->call('startWizard')
+        ->set('sport', 'Other')
+        ->set('customSport', '')
+        ->set('count', 1)
+        ->call('toStep2')
+        ->assertHasErrors(['customSport']);
+});
+
 test('the wizard requires a sport and at least one court', function () {
     $owner = User::factory()->create(['role' => UserRole::Owner]);
     $venue = Venue::factory()->for($owner, 'owner')->create();

@@ -20,9 +20,24 @@
             {{-- ── Step 1: sport, how many, naming ── --}}
             @if ($step === 1)
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <flux:input wire:model="sport" label="Sport" placeholder="e.g. Badminton" />
+                    <flux:select wire:model.live="sport" label="Sport">
+                        <flux:select.option value="">Choose a sport…</flux:select.option>
+                        @foreach (config('courtgo.sports') as $s)
+                            <flux:select.option value="{{ $s }}">{{ $s }}</flux:select.option>
+                        @endforeach
+                        <flux:select.option value="Other">Other…</flux:select.option>
+                    </flux:select>
                     <flux:input type="number" min="1" max="50" wire:model.live="count" label="How many courts?" />
                 </div>
+
+                @if ($sport === 'Other')
+                    <flux:input wire:model="customSport" label="Sport name" placeholder="Tell us the sport" />
+                    <flux:text class="text-sm text-zinc-500">
+                        Not a standard category? Add it here, or
+                        <a class="underline" href="mailto:{{ config('courtgo.support_email') }}">contact us</a>
+                        to have it added as an official category.
+                    </flux:text>
+                @endif
 
                 <flux:radio.group wire:model.live="namingStyle" label="Name them" variant="segmented">
                     <flux:radio value="number" label="Numbers (1, 2, 3)" />
