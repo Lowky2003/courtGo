@@ -31,7 +31,7 @@ class VenuePhotoController extends Controller
         $this->authorize('update', $venue);
 
         $request->validate([
-            'photo' => 'required|image|max:8192',
+            'photo' => 'required|image|max:20480',
         ]);
 
         if ($venue->image_path) {
