@@ -4,28 +4,48 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Bookable sports
+    | Bookable sports & activities
     |--------------------------------------------------------------------------
     |
-    | The curated list of sports owners can choose from (modelled on
-    | courtsite.my's categories). Owners pick "Other" for anything not here.
-    | Customers also filter by this list, so categories stay consistent.
+    | The full curated list owners can choose from (modelled on
+    | courtsite.my's category page), grouped only by comment. Owners pick
+    | "Other" for anything not here. Customers filter by this same list.
     |
     */
 
     'sports' => [
-        'Badminton',
-        'Futsal',
-        'Football',
-        'Tennis',
-        'Pickleball',
-        'Padel',
-        'Basketball',
-        'Volleyball',
-        'Squash',
-        'Netball',
-        'Field Hockey',
-        'Table Tennis',
+        // Racquet
+        'Pickleball', 'Badminton', 'Padel', 'Squash', 'Tennis', 'Table Tennis', 'Skyball',
+        // Team
+        'Futsal', 'Football', 'Light Volleyball', 'Volleyball', '3x3 Basketball', 'Basketball',
+        'Netball', 'Field Hockey', 'Dodgeball', 'Lawn Bowl', 'Frisbee', 'Cricket', 'Captain Ball',
+        'Handball', 'Indoor Hockey', 'Sepak Takraw', 'Teqball', 'Flag Football', 'Rugby',
+        // Water
+        'Free Diving', 'Mermaiding', 'Scuba Diving', 'Swimming',
+        // Recreational
+        'Archery Tag', 'Paintball', 'Zorb Attack', 'Bowling', 'Foosball', 'Golf Driving Range',
+        'Go-Kart', 'Martial Arts', 'Pool Table',
+        // Fitness & spaces
+        'Dance Studio', 'Fitness Space', 'Gym', 'Running Track', 'Wall Climbing',
+        'Event Space', 'Sporty Celebration', 'Event Room', 'Chalet',
+        // Classes
+        'Boxing', 'Brazilian Jiu-Jitsu', 'Capoeira', 'Fitness', "Fighter's Strength And Conditioning",
+        'Grappling', 'Kickboxing', 'MMA', 'Muay Thai', 'Muay Thai Fitness', 'Taekwondo',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Popular sports
+    |--------------------------------------------------------------------------
+    |
+    | A short subset shown as quick tiles on the homepage (the full list is
+    | searchable in the filters).
+    |
+    */
+
+    'popular_sports' => [
+        'Badminton', 'Futsal', 'Football', 'Tennis', 'Pickleball',
+        'Padel', 'Basketball', 'Volleyball', 'Squash', 'Table Tennis',
     ],
 
     /*

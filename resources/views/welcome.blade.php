@@ -69,13 +69,11 @@
                   class="mx-auto mt-10 grid max-w-3xl grid-cols-1 gap-3 rounded-2xl border border-zinc-200 bg-white p-4 text-left shadow-sm sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end dark:border-zinc-800 dark:bg-zinc-900">
                 <label class="block">
                     <span class="mb-1 block text-xs font-medium text-zinc-500">Sport</span>
-                    <select name="sport"
-                            class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950">
-                        <option value="">Any sport</option>
-                        @foreach ($sports as $s)
-                            <option value="{{ $s }}">{{ $s }}</option>
-                        @endforeach
-                    </select>
+                    <input list="home-sports" name="sport" placeholder="Any sport" autocomplete="off"
+                           class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950" />
+                    <datalist id="home-sports">
+                        @foreach ($sports as $s)<option value="{{ $s }}"></option>@endforeach
+                    </datalist>
                 </label>
 
                 <label class="block">
@@ -105,8 +103,8 @@
             @endguest
         </section>
 
-        {{-- Browse by sport — only sports that actually have bookable venues, so no tile is a dead end. --}}
-        @if ($sports->isNotEmpty())
+        {{-- Browse by sport — a few popular shortcuts; the full list is searchable in Find a Court. --}}
+        @if ($popularSports->isNotEmpty())
             @php($sportIcons = [
                 'Badminton' => 'sparkles', 'Futsal' => 'trophy', 'Football' => 'trophy',
                 'Pickleball' => 'sparkles', 'Tennis' => 'trophy', 'Basketball' => 'trophy',
@@ -115,7 +113,7 @@
             <section class="mx-auto max-w-6xl px-6 pb-8">
                 <h2 class="text-center text-sm font-semibold uppercase tracking-wide text-zinc-500">Browse by sport</h2>
                 <div class="mt-6 flex flex-wrap justify-center gap-3">
-                    @foreach ($sports as $s)
+                    @foreach ($popularSports as $s)
                         <a href="{{ route('courts.browse', ['sport' => $s]) }}"
                            class="flex items-center gap-2 rounded-full border border-zinc-200 px-4 py-2 text-sm font-medium hover:border-blue-400 hover:text-blue-600 dark:border-zinc-800 dark:hover:text-blue-400">
                             <flux:icon :name="$sportIcons[$s] ?? 'trophy'" class="size-4 text-blue-500" />

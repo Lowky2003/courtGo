@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome', [
         'sports' => collect(config('courtgo.sports')),
+        'popularSports' => collect(config('courtgo.popular_sports')),
     ]);
 })->name('home');
 
