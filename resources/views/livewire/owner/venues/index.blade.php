@@ -2,6 +2,12 @@
     <flux:heading size="xl">My Venues</flux:heading>
     <flux:text>Add the places you run. Each venue can hold several courts.</flux:text>
 
+    @if (session('status'))
+        <flux:callout variant="success" icon="check-circle">
+            <flux:callout.text>{{ session('status') }}</flux:callout.text>
+        </flux:callout>
+    @endif
+
     {{-- Create venue form --}}
     <form wire:submit="save" class="space-y-4 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
         <flux:heading size="lg">Add a new venue</flux:heading>
@@ -16,20 +22,7 @@
                 :options="config('courtgo.states')" wire-model="state" :value="$state" wire:key="venue-state-select" />
         </div>
 
-        {{-- One optional photo of the place, shown to customers (resized in-browser before upload). --}}
-        <div x-data="{ busy: false }">
-            <flux:label>Photo (optional)</flux:label>
-            <input type="file" accept="image/*"
-                   x-on:change="busy = true; window.courtgoUploadPhoto($event, $wire, 'image', () => busy = false)"
-                   class="mt-1 block w-full text-sm text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-white hover:file:bg-blue-700 dark:text-zinc-300" />
-            <flux:error name="image" />
-
-            <div x-show="busy" x-cloak class="mt-2 text-sm text-zinc-500">Uploading…</div>
-
-            @if ($image)
-                <img src="{{ $image->temporaryUrl() }}" alt="Preview" class="mt-2 h-32 w-full max-w-xs rounded-lg object-cover" />
-            @endif
-        </div>
+        <flux:text class="text-sm text-zinc-500">You can add a photo after creating the venue.</flux:text>
 
         <flux:button type="submit" variant="primary">Add venue</flux:button>
     </form>
@@ -69,11 +62,9 @@
                                         <flux:button size="sm" variant="primary" :href="route('owner.venues.courts', $venue)" wire:navigate>
                                             Manage courts
                                         </flux:button>
-                                        <flux:modal.trigger name="edit-photo">
-                                            <flux:button size="sm" variant="ghost" icon="photo" wire:click="editPhoto({{ $venue->id }})">
-                                                Photo
-                                            </flux:button>
-                                        </flux:modal.trigger>
+                                        <flux:button size="sm" variant="ghost" icon="photo" :href="route('owner.venues.photo.edit', $venue)" wire:navigate>
+                                            Photo
+                                        </flux:button>
                                         <flux:button
                                             size="sm"
                                             variant="danger"
@@ -91,29 +82,4 @@
             </div>
         @endif
     </div>
-
-    {{-- Change-photo modal (closes itself after a successful save) --}}
-    <flux:modal name="edit-photo" class="max-w-lg" wire:close="cancelEditPhoto" x-on:photo-saved.window="$flux.modal('edit-photo').close()">
-        <div class="space-y-4" x-data="{ busy: false }">
-            <flux:heading size="lg">Change venue photo</flux:heading>
-
-            <input type="file" accept="image/*"
-                   x-on:change="busy = true; window.courtgoUploadPhoto($event, $wire, 'newImage', () => busy = false)"
-                   class="block w-full text-sm text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-white hover:file:bg-blue-700 dark:text-zinc-300" />
-            <flux:error name="newImage" />
-
-            <div x-show="busy" x-cloak class="text-sm text-zinc-500">Uploading…</div>
-
-            @if ($newImage)
-                <img src="{{ $newImage->temporaryUrl() }}" alt="Preview" class="h-40 w-full rounded-lg object-cover" />
-            @endif
-
-            <div class="flex justify-end gap-2">
-                <flux:modal.close>
-                    <flux:button variant="ghost" wire:click="cancelEditPhoto">Cancel</flux:button>
-                </flux:modal.close>
-                <flux:button variant="primary" wire:click="updatePhoto">Save photo</flux:button>
-            </div>
-        </div>
-    </flux:modal>
 </div>

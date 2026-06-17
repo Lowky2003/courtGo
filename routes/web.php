@@ -45,6 +45,8 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->group(function () {
     Route::redirect('/', '/owner/venues')->name('home');
     Route::get('/venues', \App\Livewire\Owner\Venues\Index::class)->name('venues.index');
+    Route::get('/venues/{venue}/photo', [\App\Http\Controllers\Owner\VenuePhotoController::class, 'edit'])->name('venues.photo.edit');
+    Route::post('/venues/{venue}/photo', [\App\Http\Controllers\Owner\VenuePhotoController::class, 'update'])->name('venues.photo.update');
     Route::get('/venues/{venue}', \App\Livewire\Owner\Venues\Courts::class)->name('venues.courts');
     Route::get('/courts/{court}/schedule', \App\Livewire\Owner\Courts\Schedule::class)->name('courts.schedule');
 

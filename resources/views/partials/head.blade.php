@@ -72,11 +72,23 @@
             return new File([blob], (file.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
         } catch (e) { return file; }
     };
-    window.courtgoUploadPhoto = async function (event, wire, prop, done) {
-        var file = event.target.files && event.target.files[0];
-        if (! file) { if (done) done(); return; }
-        var toUpload = await window.courtgoResizeImage(file, 1280, 0.82);
-        wire.upload(prop, toUpload, function () { if (done) done(); }, function () { if (done) done(); });
-    };
+    // For plain upload forms (data-resize-image on the file input): shrink the
+    // chosen image in the browser, then submit the form as a single request.
+    document.addEventListener('submit', async function (e) {
+        var form = e.target;
+        var input = form.querySelector && form.querySelector('input[type=file][data-resize-image]');
+        if (! input || form.dataset.cgResized || ! input.files || ! input.files[0]) return;
+        var file = input.files[0];
+        if (! file.type || file.type.indexOf('image/') !== 0) return;
+        e.preventDefault();
+        var resized = await window.courtgoResizeImage(file, 1280, 0.82);
+        try {
+            var dt = new DataTransfer();
+            dt.items.add(resized);
+            input.files = dt.files;
+        } catch (err) { /* DataTransfer unsupported — submit the original */ }
+        form.dataset.cgResized = '1';
+        form.submit();
+    }, true);
 </script>
 @fluxAppearance

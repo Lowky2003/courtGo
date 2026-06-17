@@ -8,26 +8,6 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
-test('an owner can upload one venue photo', function () {
-    Storage::fake('public');
-    $owner = User::factory()->create(['role' => UserRole::Owner]);
-
-    Livewire::actingAs($owner)
-        ->test(Index::class)
-        ->set('name', 'Photo Hall')
-        ->set('address', 'Jalan Foto')
-        ->set('city', 'Ipoh')
-        ->set('state', 'Perak')
-        ->set('image', UploadedFile::fake()->image('venue.jpg'))
-        ->call('save')
-        ->assertHasNoErrors();
-
-    $venue = Venue::where('name', 'Photo Hall')->first();
-    expect($venue->image_path)->not->toBeNull()
-        ->and($venue->imageUrl())->not->toBeNull();
-    Storage::disk('public')->assertExists($venue->image_path);
-});
-
 test('deleting a venue removes its image file', function () {
     Storage::fake('public');
     $owner = User::factory()->create(['role' => UserRole::Owner]);
@@ -42,48 +22,6 @@ test('deleting a venue removes its image file', function () {
         ->assertHasNoErrors();
 
     Storage::disk('public')->assertMissing($venue->image_path);
-});
-
-test('an owner can replace a venue photo', function () {
-    Storage::fake('public');
-    $owner = User::factory()->create(['role' => UserRole::Owner]);
-    $old = UploadedFile::fake()->image('old.jpg')->store('venues', 'public');
-    $venue = Venue::factory()->for($owner, 'owner')->create(['image_path' => $old]);
-
-    Livewire::actingAs($owner)
-        ->test(Index::class)
-        ->call('editPhoto', $venue->id)
-        ->set('newImage', UploadedFile::fake()->image('new.jpg'))
-        ->call('updatePhoto')
-        ->assertHasNoErrors()
-        ->assertDispatched('photo-saved'); // modal closes
-
-    $venue->refresh();
-    expect($venue->image_path)->not->toBe($old);
-    Storage::disk('public')->assertMissing($old);        // old file removed
-    Storage::disk('public')->assertExists($venue->image_path);
-});
-
-test('updating a photo with no venue selected does nothing', function () {
-    Storage::fake('public');
-    $owner = User::factory()->create(['role' => UserRole::Owner]);
-
-    // editingVenueId is null (e.g. modal dismissed) — must not error or overwrite anything.
-    Livewire::actingAs($owner)
-        ->test(Index::class)
-        ->set('newImage', UploadedFile::fake()->image('stray.jpg'))
-        ->call('updatePhoto')
-        ->assertHasNoErrors();
-});
-
-test('an owner cannot edit another owners venue photo', function () {
-    $owner = User::factory()->create(['role' => UserRole::Owner]);
-    $venue = Venue::factory()->create(); // a different owner's venue
-
-    Livewire::actingAs($owner)
-        ->test(Index::class)
-        ->call('editPhoto', $venue->id)
-        ->assertForbidden();
 });
 
 test('a venue state must be one of the curated states', function () {
