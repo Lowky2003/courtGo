@@ -56,3 +56,30 @@ test('a court is not bookable when the owner is not subscribed', function () {
 
     expect($court->isBookable())->toBeFalse();
 });
+
+test('a pending owner cannot accept bookings even when subscribed and onboarded', function () {
+    $owner = User::factory()->pending()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
+    activeSubscriptionFor($owner);
+
+    expect($owner->fresh()->canAcceptBookings())->toBeFalse();
+});
+
+test('a pending owners courts are hidden from customers', function () {
+    $owner = User::factory()->pending()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
+    activeSubscriptionFor($owner);
+    $venue = Venue::factory()->for($owner, 'owner')->create();
+    Court::factory()->for($venue)->create(['is_active' => true]);
+
+    expect(Court::bookable()->count())->toBe(0);
+});
+
+test('approving a pending owner lets them go live', function () {
+    $owner = User::factory()->pending()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
+    activeSubscriptionFor($owner);
+
+    expect($owner->fresh()->canAcceptBookings())->toBeFalse();
+
+    $owner->update(['approved_at' => now()]);
+
+    expect($owner->fresh()->canAcceptBookings())->toBeTrue();
+});

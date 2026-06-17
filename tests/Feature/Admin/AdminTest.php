@@ -37,6 +37,17 @@ test('a customer cannot access the admin area', function () {
     $this->actingAs($customer)->get('/admin/dashboard')->assertForbidden();
 });
 
+test('an admin can approve a pending owner', function () {
+    $admin = User::factory()->create(['role' => UserRole::Admin]);
+    $owner = User::factory()->pending()->create(['role' => UserRole::Owner]);
+
+    expect($owner->isApproved())->toBeFalse();
+
+    Livewire::actingAs($admin)->test(Owners::class)->call('approve', $owner->id);
+
+    expect($owner->fresh()->isApproved())->toBeTrue();
+});
+
 test('an admin can suspend and unsuspend an owner', function () {
     $admin = User::factory()->create(['role' => UserRole::Admin]);
     $owner = User::factory()->create(['role' => UserRole::Owner]);

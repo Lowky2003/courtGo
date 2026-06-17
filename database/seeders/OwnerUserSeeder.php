@@ -22,6 +22,7 @@ class OwnerUserSeeder extends Seeder
                 'role' => UserRole::Owner,
                 'email_verified_at' => now(),
                 // Demo: mark the owner "live" so their courts are bookable without real Stripe.
+                'approved_at' => now(),
                 'connect_onboarded' => true,
                 'stripe_connect_account_id' => 'acct_demo',
             ],

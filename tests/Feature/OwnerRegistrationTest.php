@@ -16,6 +16,21 @@ test('registering with role=owner creates an owner account', function () {
         ->toBe(UserRole::Owner);
 });
 
+test('a newly registered owner starts pending admin approval', function () {
+    $this->post(route('register.store'), [
+        'name' => 'New Boss',
+        'email' => 'newboss@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+        'role' => 'owner',
+    ])->assertSessionHasNoErrors();
+
+    $owner = User::where('email', 'newboss@example.com')->first();
+
+    expect($owner->role)->toBe(UserRole::Owner)
+        ->and($owner->isApproved())->toBeFalse();
+});
+
 test('registering without a role still creates a customer', function () {
     $this->post(route('register.store'), [
         'name' => 'Normal Player',

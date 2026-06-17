@@ -29,8 +29,14 @@
         @if ($user->role === \App\Enums\UserRole::Owner && ! $user->canAcceptBookings())
             <flux:callout variant="warning" icon="exclamation-triangle">
                 <flux:callout.text>
-                    <strong>Your courts aren't live yet.</strong>
-                    Finish your subscription and connect your bank in <a class="underline" href="{{ route('owner.billing') }}">Billing</a> so customers can book.
+                    @if (! $user->isApproved())
+                        <strong>Your account is pending approval.</strong>
+                        We review new venues before they go live. You can add your venue and set up
+                        <a class="underline" href="{{ route('owner.billing') }}">Billing</a> now — customers will be able to book once you're approved.
+                    @else
+                        <strong>Your courts aren't live yet.</strong>
+                        Finish your subscription and connect your bank in <a class="underline" href="{{ route('owner.billing') }}">Billing</a> so customers can book.
+                    @endif
                 </flux:callout.text>
             </flux:callout>
         @endif
