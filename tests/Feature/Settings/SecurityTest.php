@@ -17,12 +17,8 @@ class SecurityTest extends TestCase
     {
         parent::setUp();
 
-        $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
+        $this->skipUnlessFortifyHas(Features::passkeys());
 
-        Features::twoFactorAuthentication([
-            'confirm' => true,
-            'confirmPassword' => true,
-        ]);
         Features::passkeys([
             'confirmPassword' => true,
         ]);
@@ -40,8 +36,7 @@ class SecurityTest extends TestCase
 
         $response->assertSee('Passkeys');
         $response->assertSee('No passkeys yet');
-        $response->assertSee('Two-factor authentication');
-        $response->assertSee('Enable 2FA');
+        $response->assertDontSee('Two-factor authentication'); // 2FA removed
     }
 
     public function test_security_settings_page_requires_password_confirmation_when_enabled(): void
@@ -68,29 +63,6 @@ class SecurityTest extends TestCase
             ->assertDontSee('Manage your passkeys for passwordless sign-in')
             ->assertDontSee('Add a passkey to sign in without a password')
             ->assertDontSee('Two-factor authentication');
-    }
-
-    public function test_two_factor_authentication_disabled_when_confirmation_abandoned_between_requests(): void
-    {
-        $user = User::factory()->create();
-
-        $user->forceFill([
-            'two_factor_secret' => encrypt('test-secret'),
-            'two_factor_recovery_codes' => encrypt(json_encode(['code1', 'code2'])),
-            'two_factor_confirmed_at' => null,
-        ])->save();
-
-        $this->actingAs($user);
-
-        $component = Livewire::test('pages::settings.security');
-
-        $component->assertSet('twoFactorEnabled', false);
-
-        $this->assertDatabaseHas('users', [
-            'id' => $user->id,
-            'two_factor_secret' => null,
-            'two_factor_recovery_codes' => null,
-        ]);
     }
 
     public function test_password_can_be_updated(): void

@@ -6,12 +6,12 @@
     <form wire:submit="save" class="space-y-4 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
         <flux:heading size="lg">Add a new venue</flux:heading>
 
-        <flux:input wire:model="name" label="Venue name" placeholder="Sunway Badminton Hall" autocomplete="off" />
+        <flux:input wire:model="name" label="Venue name" placeholder="Sunway Badminton Hall" autocomplete="off" data-no-autofill />
         <flux:textarea wire:model="description" label="Description (optional)" placeholder="A short description of this place" />
         <flux:input wire:model="address" label="Address" placeholder="Jalan PJS 11, Bandar Sunway" />
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <flux:input wire:model="city" label="City" placeholder="Subang Jaya" autocomplete="off" />
+            <flux:input wire:model="city" label="City" placeholder="Subang Jaya" autocomplete="off" data-no-autofill />
             <x-searchable-select label="State" placeholder="Type or pick a state"
                 :options="config('courtgo.states')" wire-model="state" :value="$state" wire:key="venue-state-select" />
         </div>

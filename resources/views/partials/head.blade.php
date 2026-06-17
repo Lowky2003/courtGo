@@ -22,4 +22,30 @@
         window.localStorage.setItem('flux.appearance', 'light');
     }
 </script>
+
+<script>
+    // Suppress the browser's autofill / saved-value popup on free-text fields by
+    // holding them readonly until focus (browsers skip autofill on readonly fields).
+    // Uses event delegation + skips the focused field, so it survives Livewire morphs.
+    (function () {
+        function lockAll() {
+            document.querySelectorAll('input[data-no-autofill]').forEach(function (el) {
+                if (el !== document.activeElement) el.setAttribute('readonly', 'readonly');
+            });
+        }
+        document.addEventListener('focusin', function (e) {
+            var t = e.target;
+            if (t && t.matches && t.matches('input[data-no-autofill]')) t.removeAttribute('readonly');
+        });
+        document.addEventListener('DOMContentLoaded', lockAll);
+        document.addEventListener('livewire:navigated', lockAll);
+        document.addEventListener('livewire:init', function () {
+            window.Livewire.hook('commit', function (payload) {
+                if (payload && typeof payload.succeed === 'function') {
+                    payload.succeed(function () { setTimeout(lockAll, 0); });
+                }
+            });
+        });
+    })();
+</script>
 @fluxAppearance
