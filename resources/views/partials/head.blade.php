@@ -81,7 +81,7 @@
         var file = input.files[0];
         if (! file.type || file.type.indexOf('image/') !== 0) return;
         e.preventDefault();
-        var resized = await window.courtgoResizeImage(file, 1280, 0.82);
+        var resized = await window.courtgoResizeImage(file, 1920, 0.90);
         try {
             var dt = new DataTransfer();
             dt.items.add(resized);
