@@ -18,7 +18,14 @@ Route::get('/', function () {
 Route::view('/for-business', 'for-business')->name('for-business');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', function () {
+        // Customers have no dashboard — send them straight to the homepage.
+        if (auth()->user()->role === \App\Enums\UserRole::Customer) {
+            return redirect()->route('home');
+        }
+
+        return view('dashboard');
+    })->name('dashboard');
 });
 
 // Customer: browse, book & pay, my bookings

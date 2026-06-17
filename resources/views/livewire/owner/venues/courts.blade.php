@@ -7,26 +7,133 @@
         <flux:text>{{ $venue->city }}, {{ $venue->state }}</flux:text>
     </div>
 
-    {{-- Add court form --}}
-    <form wire:submit="addCourt" class="space-y-4 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
-        <flux:heading size="lg">Add a court</flux:heading>
+    @if (! $showWizard)
+        <flux:button variant="primary" icon="plus" wire:click="startWizard">Add courts</flux:button>
+    @else
+        {{-- ───────────────────────── Add-courts wizard ───────────────────────── --}}
+        <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 space-y-6">
+            <div class="flex items-center justify-between">
+                <flux:heading size="lg">Add courts</flux:heading>
+                <flux:text class="text-sm text-zinc-500">Step {{ $step }} of 3</flux:text>
+            </div>
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <flux:input wire:model="name" label="Court name" placeholder="Court 1" />
-            <flux:input wire:model="sport" label="Sport" placeholder="Badminton" />
+            {{-- ── Step 1: sport, how many, naming ── --}}
+            @if ($step === 1)
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <flux:input wire:model="sport" label="Sport" placeholder="e.g. Badminton" />
+                    <flux:input type="number" min="1" max="50" wire:model.live="count" label="How many courts?" />
+                </div>
+
+                <flux:radio.group wire:model.live="namingStyle" label="Name them" variant="segmented">
+                    <flux:radio value="number" label="Numbers (1, 2, 3)" />
+                    <flux:radio value="letter" label="Letters (A, B, C)" />
+                </flux:radio.group>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <flux:input wire:model.live="prefix" label="Prefix" placeholder="Court" />
+                    @if ($namingStyle === 'number')
+                        <flux:input type="number" min="1" wire:model.live="startNumber" label="Start from number" />
+                    @else
+                        <flux:input maxlength="1" wire:model.live="startLetter" label="Start from letter" />
+                    @endif
+                </div>
+
+                <div class="rounded-lg bg-zinc-50 dark:bg-zinc-900 p-4">
+                    <flux:text class="text-sm font-medium">Preview</flux:text>
+                    <div class="mt-2 flex flex-wrap gap-2">
+                        @foreach ($previewNames as $name)
+                            <flux:badge size="sm" color="blue">{{ $name }}</flux:badge>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="flex justify-between">
+                    <flux:button variant="ghost" wire:click="cancelWizard">Cancel</flux:button>
+                    <flux:button variant="primary" wire:click="toStep2">Next: schedule</flux:button>
+                </div>
+            @endif
+
+            {{-- ── Step 2: same or different schedule ── --}}
+            @if ($step === 2)
+                <flux:text>Do all {{ count($previewNames) }} courts run on the same weekly schedule?</flux:text>
+
+                <flux:radio.group wire:model="scheduleMode">
+                    <flux:radio value="same" label="Same schedule for every court" description="Set the weekly sessions once and apply to all." />
+                    <flux:radio value="different" label="Different schedule per court" description="Set each court's sessions separately in the next step." />
+                </flux:radio.group>
+
+                <div class="flex justify-between">
+                    <flux:button variant="ghost" wire:click="back">Back</flux:button>
+                    <flux:button variant="primary" wire:click="toStep3">Next: sessions</flux:button>
+                </div>
+            @endif
+
+            {{-- ── Step 3: build the schedule(s) ── --}}
+            @if ($step === 3)
+                <flux:text class="text-sm text-zinc-500">
+                    Add the weekly sessions customers can book. A court with no sessions is created but won't be bookable until you add a schedule.
+                </flux:text>
+
+                @if ($scheduleMode === 'same')
+                    <div class="space-y-3">
+                        <flux:text class="font-medium">Weekly sessions (applied to every court)</flux:text>
+
+                        @foreach ($sessions as $i => $row)
+                            <div wire:key="session-{{ $i }}" class="grid grid-cols-2 gap-2 sm:grid-cols-5 sm:items-end">
+                                <flux:select wire:model="sessions.{{ $i }}.day_of_week" label="Day">
+                                    @foreach ($days as $num => $label)
+                                        <flux:select.option value="{{ $num }}">{{ $label }}</flux:select.option>
+                                    @endforeach
+                                </flux:select>
+                                <flux:input type="time" wire:model="sessions.{{ $i }}.start_time" label="Start" />
+                                <flux:input type="time" wire:model="sessions.{{ $i }}.end_time" label="End" />
+                                <flux:input type="number" min="0" step="0.01" wire:model="sessions.{{ $i }}.price" label="Price (RM)" />
+                                <flux:button variant="ghost" icon="trash" wire:click="removeSession({{ $i }})" />
+                            </div>
+                        @endforeach
+
+                        <flux:button size="sm" variant="ghost" icon="plus" wire:click="addSession">Add session</flux:button>
+                    </div>
+                @else
+                    <div class="space-y-6">
+                        @foreach ($previewNames as $c => $courtName)
+                            <div wire:key="court-sched-{{ $c }}" class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-4 space-y-3">
+                                <flux:heading size="sm">{{ $courtName }}</flux:heading>
+
+                                @foreach ($courtSessions[$c] ?? [] as $i => $row)
+                                    <div wire:key="court-{{ $c }}-session-{{ $i }}" class="grid grid-cols-2 gap-2 sm:grid-cols-5 sm:items-end">
+                                        <flux:select wire:model="courtSessions.{{ $c }}.{{ $i }}.day_of_week" label="Day">
+                                            @foreach ($days as $num => $label)
+                                                <flux:select.option value="{{ $num }}">{{ $label }}</flux:select.option>
+                                            @endforeach
+                                        </flux:select>
+                                        <flux:input type="time" wire:model="courtSessions.{{ $c }}.{{ $i }}.start_time" label="Start" />
+                                        <flux:input type="time" wire:model="courtSessions.{{ $c }}.{{ $i }}.end_time" label="End" />
+                                        <flux:input type="number" min="0" step="0.01" wire:model="courtSessions.{{ $c }}.{{ $i }}.price" label="Price (RM)" />
+                                        <flux:button variant="ghost" icon="trash" wire:click="removeCourtSession({{ $c }}, {{ $i }})" />
+                                    </div>
+                                @endforeach
+
+                                <flux:button size="sm" variant="ghost" icon="plus" wire:click="addCourtSession({{ $c }})">Add session</flux:button>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
+                <div class="flex justify-between">
+                    <flux:button variant="ghost" wire:click="back">Back</flux:button>
+                    <flux:button variant="primary" wire:click="create">Create {{ count($previewNames) }} court(s)</flux:button>
+                </div>
+            @endif
         </div>
+    @endif
 
-        <flux:switch wire:model="is_active" label="Open for booking" />
-
-        <flux:button type="submit" variant="primary">Add court</flux:button>
-    </form>
-
-    {{-- Court list --}}
+    {{-- ───────────────────────── Existing courts ───────────────────────── --}}
     <div class="space-y-3">
         <flux:heading size="lg">Courts ({{ $courts->count() }})</flux:heading>
 
         @if ($courts->isEmpty())
-            <flux:text>No courts yet. Add your first one above.</flux:text>
+            <flux:text>No courts yet. Click “Add courts” to create some.</flux:text>
         @else
             <div class="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
                 <table class="w-full text-left text-sm">

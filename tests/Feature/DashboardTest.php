@@ -17,13 +17,11 @@ class DashboardTest extends TestCase
         $response->assertRedirect(route('login'));
     }
 
-    public function test_authenticated_users_can_visit_the_dashboard(): void
+    public function test_customers_are_redirected_from_the_dashboard_to_home(): void
     {
-        $user = User::factory()->create();
-        $this->actingAs($user);
+        $this->actingAs(User::factory()->create()); // customer by default
 
-        $response = $this->get(route('dashboard'));
-        $response->assertOk();
+        $this->get(route('dashboard'))->assertRedirect(route('home'));
     }
 
     public function test_owner_dashboard_renders_and_warns_when_not_live(): void

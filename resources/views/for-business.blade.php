@@ -21,10 +21,17 @@
                         For players
                     </a>
                     @auth
-                        <a href="{{ route('dashboard') }}" wire:navigate
-                           class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-                            Go to dashboard
-                        </a>
+                        @if (auth()->user()->role === \App\Enums\UserRole::Customer)
+                            <a href="{{ route('bookings.mine') }}" wire:navigate
+                               class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                                My bookings
+                            </a>
+                        @else
+                            <a href="{{ route('dashboard') }}" wire:navigate
+                               class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                                Go to dashboard
+                            </a>
+                        @endif
                     @else
                         <a href="{{ route('login') }}" wire:navigate
                            class="rounded-lg px-4 py-2 text-sm font-medium text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white">

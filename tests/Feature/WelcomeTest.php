@@ -57,10 +57,17 @@ class WelcomeTest extends TestCase
             ->assertDontSee('Browse by sport');
     }
 
-    public function test_landing_page_shows_dashboard_link_to_authenticated_users(): void
+    public function test_landing_nav_is_role_aware_for_authenticated_users(): void
     {
+        // A customer gets a bookings link, not a dashboard.
         $this->actingAs(User::factory()->create());
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('My bookings')
+            ->assertDontSee('Go to dashboard');
 
+        // An owner/admin still gets the dashboard link.
+        $this->actingAs(User::factory()->create(['role' => UserRole::Owner]));
         $this->get(route('home'))
             ->assertOk()
             ->assertSee('Go to dashboard');
