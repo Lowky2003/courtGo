@@ -6,10 +6,10 @@
 
     {{-- Search --}}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <flux:input wire:model.live.debounce.300ms="name" label="Place name" placeholder="e.g. Sunway Hall" autocomplete="off" data-no-autofill />
+        <flux:input wire:model.live.debounce.300ms="name" label="Place name" placeholder="e.g. Sunway Hall" autocomplete="new-password" data-no-autofill />
         <x-searchable-select label="Sport" placeholder="Any sport" :options="$sports" wire-model="sport" :live="true" :value="$sport" />
         <x-searchable-select label="State" placeholder="Any state" :options="$states" wire-model="state" :live="true" :value="$state" />
-        <flux:input wire:model.live.debounce.300ms="city" label="City" placeholder="e.g. Subang Jaya" autocomplete="off" data-no-autofill />
+        <flux:input wire:model.live.debounce.300ms="city" label="City" placeholder="e.g. Subang Jaya" autocomplete="new-password" data-no-autofill />
         <flux:input type="date" wire:model.live="date" label="Date" :min="now()->toDateString()" />
     </div>
 

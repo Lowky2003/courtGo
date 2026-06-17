@@ -48,7 +48,7 @@
                x-on:input="onInput()"
                x-on:focus="open = true"
                placeholder="{{ $placeholder }}"
-               autocomplete="off" data-no-autofill
+               autocomplete="new-password" data-no-autofill
                class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900" />
 
         @if ($name)
