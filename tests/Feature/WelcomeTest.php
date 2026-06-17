@@ -34,11 +34,12 @@ class WelcomeTest extends TestCase
 
     public function test_landing_nav_is_role_aware_for_authenticated_users(): void
     {
-        // A customer gets a bookings link, not a dashboard.
+        // A customer gets browse + bookings links and a profile menu, not a dashboard.
         $this->actingAs(User::factory()->create());
         $this->get(route('home'))
             ->assertOk()
             ->assertSee('My bookings')
+            ->assertSee('Log out')          // profile dropdown in the shared header
             ->assertDontSee('Go to dashboard');
 
         // An owner/admin still gets the dashboard link.

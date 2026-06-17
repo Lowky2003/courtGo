@@ -50,32 +50,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Sport icons (emoji)
+    | Sport icons
     |--------------------------------------------------------------------------
     |
-    | A simple visual for each sport, shown on the homepage tiles. Emoji keep
-    | it asset-free; swap for real images later if you like.
+    | Each sport's tile icon is a hand-drawn SVG in the <x-sport-icon> Blade
+    | component (resources/views/components/sport-icon.blade.php), keyed by the
+    | sport name above. Add a matching @case there when you add a sport here.
     |
     */
-
-    'sport_emojis' => [
-        'Pickleball' => '🥒', 'Badminton' => '🏸', 'Padel' => '🎾', 'Squash' => '🎾',
-        'Tennis' => '🎾', 'Table Tennis' => '🏓', 'Skyball' => '🏸',
-        'Futsal' => '⚽', 'Football' => '⚽', 'Light Volleyball' => '🏐', 'Volleyball' => '🏐',
-        '3x3 Basketball' => '🏀', 'Basketball' => '🏀', 'Netball' => '🏀', 'Field Hockey' => '🏑',
-        'Dodgeball' => '🤾', 'Lawn Bowl' => '🎳', 'Frisbee' => '🥏', 'Cricket' => '🏏',
-        'Captain Ball' => '🏀', 'Handball' => '🤾', 'Indoor Hockey' => '🏑', 'Sepak Takraw' => '🏐',
-        'Teqball' => '⚽', 'Flag Football' => '🏈', 'Rugby' => '🏉',
-        'Free Diving' => '🤿', 'Mermaiding' => '🧜', 'Scuba Diving' => '🤿', 'Swimming' => '🏊',
-        'Archery Tag' => '🏹', 'Paintball' => '🎯', 'Zorb Attack' => '⚪', 'Bowling' => '🎳',
-        'Foosball' => '⚽', 'Golf Driving Range' => '⛳', 'Go-Kart' => '🏎️', 'Martial Arts' => '🥋',
-        'Pool Table' => '🎱', 'Dance Studio' => '💃', 'Fitness Space' => '🏋️', 'Gym' => '🏋️',
-        'Running Track' => '🏃', 'Wall Climbing' => '🧗', 'Event Space' => '🎪',
-        'Sporty Celebration' => '🎉', 'Event Room' => '🎪', 'Chalet' => '🏡',
-        'Boxing' => '🥊', 'Brazilian Jiu-Jitsu' => '🥋', 'Capoeira' => '🥋', 'Fitness' => '🏋️',
-        "Fighter's Strength And Conditioning" => '🥊', 'Grappling' => '🤼', 'Kickboxing' => '🥊',
-        'MMA' => '🥊', 'Muay Thai' => '🥊', 'Muay Thai Fitness' => '🥊', 'Taekwondo' => '🥋',
-    ],
 
     /*
     |--------------------------------------------------------------------------

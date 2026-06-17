@@ -5,127 +5,77 @@
     </head>
     <body class="min-h-screen bg-white text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
 
-        {{-- Top navigation --}}
-        <header class="border-b border-zinc-200 dark:border-zinc-800">
-            <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-                <a href="{{ route('home') }}" class="flex items-center gap-2 text-lg font-semibold">
-                    <span class="flex size-8 items-center justify-center rounded-md bg-blue-600 text-white">
-                        <flux:icon name="map-pin" class="size-5" />
+        {{-- Top navigation (shared with the customer-facing pages) --}}
+        <x-site-header />
+
+        {{-- Hero banner: an image band with the headline overlaid, and the search
+             card pulled up to overlap its lower edge. --}}
+        <section>
+            <div class="relative isolate overflow-hidden">
+                <img src="{{ asset('images/hero-banner.svg') }}" alt=""
+                     class="absolute inset-0 -z-10 h-full w-full object-cover" />
+
+                <div class="mx-auto max-w-6xl px-6 pb-24 pt-16 text-center sm:pb-32 sm:pt-24">
+                    <span class="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-sm text-white backdrop-blur">
+                        <span class="size-2 rounded-full bg-emerald-400"></span>
+                        Sports court booking, made simple
                     </span>
-                    {{ config('app.name') }}
-                </a>
 
-                <div class="flex items-center gap-1 sm:gap-3">
-                    @guest
-                        <a href="{{ route('for-business') }}"
-                           class="hidden rounded-lg px-4 py-2 text-sm font-medium text-zinc-700 hover:text-zinc-900 sm:inline-block dark:text-zinc-300 dark:hover:text-white">
-                            For owners
-                        </a>
-                    @endguest
-                    @auth
-                        @if (auth()->user()->role === \App\Enums\UserRole::Customer)
-                            <a href="{{ route('courts.browse') }}" wire:navigate
-                               class="rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white">
-                                Find a court
-                            </a>
-                            <a href="{{ route('bookings.mine') }}" wire:navigate
-                               class="rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white">
-                                My bookings
-                            </a>
-                        @else
-                            <a href="{{ route('dashboard') }}" wire:navigate
-                               class="rounded-lg px-3 py-2 text-sm font-medium text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white">
-                                Go to dashboard
-                            </a>
-                        @endif
+                    <h1 class="mx-auto mt-6 max-w-3xl text-4xl font-bold tracking-tight text-white sm:text-6xl">
+                        Book your next game in seconds.
+                    </h1>
 
-                        {{-- Profile menu (top-right) --}}
-                        <flux:dropdown position="bottom" align="end">
-                            <flux:profile :name="auth()->user()->name" :initials="auth()->user()->initials()" icon:trailing="chevron-down" />
-                            <flux:menu>
-                                <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>{{ __('Profile') }}</flux:menu.item>
-                                <flux:menu.separator />
-                                <form method="POST" action="{{ route('logout') }}" class="w-full">
-                                    @csrf
-                                    <flux:menu.item as="button" type="submit" icon="arrow-right-start-on-rectangle" class="w-full cursor-pointer">
-                                        {{ __('Log out') }}
-                                    </flux:menu.item>
-                                </form>
-                            </flux:menu>
-                        </flux:dropdown>
-                    @else
-                        <a href="{{ route('login') }}" wire:navigate
-                           class="rounded-lg px-4 py-2 text-sm font-medium text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white">
-                            Log in
-                        </a>
-                        <a href="{{ route('register') }}" wire:navigate
-                           class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-                            Get started
-                        </a>
-                    @endauth
+                    <p class="mx-auto mt-6 max-w-2xl text-lg text-blue-100">
+                        Find badminton, futsal, tennis and more across Malaysia. Pick a time, book a court,
+                        and pay securely — no phone calls, no waiting.
+                    </p>
                 </div>
-            </nav>
-        </header>
-
-        {{-- Hero --}}
-        <section class="mx-auto max-w-6xl px-6 py-16 text-center sm:py-24">
-            <span class="inline-flex items-center gap-2 rounded-full border border-zinc-200 px-3 py-1 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-                <span class="size-2 rounded-full bg-emerald-500"></span>
-                Sports court booking, made simple
-            </span>
-
-            <h1 class="mx-auto mt-6 max-w-3xl text-4xl font-bold tracking-tight sm:text-6xl">
-                Book your next game in seconds.
-            </h1>
-
-            <p class="mx-auto mt-6 max-w-2xl text-lg text-zinc-600 dark:text-zinc-400">
-                Find badminton, futsal, tennis and more across Malaysia. Pick a time, book a court,
-                and pay securely — no phone calls, no waiting.
-            </p>
+            </div>
 
             {{-- Search bar: sport + location + date → Find a Court --}}
-            <form method="GET" action="{{ route('courts.browse') }}"
-                  class="mx-auto mt-10 grid max-w-4xl grid-cols-1 gap-3 rounded-2xl border border-zinc-200 bg-white p-4 text-left shadow-sm sm:grid-cols-2 sm:items-end lg:grid-cols-[1fr_1fr_1fr_1fr_auto] dark:border-zinc-800 dark:bg-zinc-900">
-                <div>
-                    <span class="mb-1 block text-xs font-medium text-zinc-500">Sport</span>
-                    <x-searchable-select name="sport" placeholder="Any sport" :options="$sports" />
-                </div>
+            <div class="relative z-10 mx-auto -mt-12 mb-4 max-w-4xl px-6">
+                <form method="GET" action="{{ route('courts.browse') }}"
+                      class="grid grid-cols-1 gap-3 rounded-2xl border border-zinc-200 bg-white p-4 text-left shadow-xl sm:grid-cols-2 sm:items-end lg:grid-cols-[1fr_1fr_1fr_1fr_auto] dark:border-zinc-800 dark:bg-zinc-900">
+                    <div>
+                        <span class="mb-1 block text-xs font-medium text-zinc-500">Sport</span>
+                        <x-searchable-select name="sport" placeholder="Any sport" :options="$sports" />
+                    </div>
 
-                <label class="block">
-                    <span class="mb-1 block text-xs font-medium text-zinc-500">City</span>
-                    <input type="text" name="city" placeholder="e.g. Subang Jaya" autocomplete="new-password" data-no-autofill
-                           class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950" />
-                </label>
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-medium text-zinc-500">City</span>
+                        <input type="text" name="city" placeholder="e.g. Subang Jaya" autocomplete="new-password" data-no-autofill
+                               class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950" />
+                    </label>
 
-                <div>
-                    <span class="mb-1 block text-xs font-medium text-zinc-500">State</span>
-                    <x-searchable-select name="state" placeholder="Any state" :options="$states" />
-                </div>
+                    <div>
+                        <span class="mb-1 block text-xs font-medium text-zinc-500">State</span>
+                        <x-searchable-select name="state" placeholder="Any state" :options="$states" />
+                    </div>
 
-                <label class="block">
-                    <span class="mb-1 block text-xs font-medium text-zinc-500">Date</span>
-                    <input type="date" name="date" min="{{ now()->toDateString() }}"
-                           class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950" />
-                </label>
+                    <label class="block">
+                        <span class="mb-1 block text-xs font-medium text-zinc-500">Date</span>
+                        <input type="date" name="date" min="{{ now()->toDateString() }}"
+                               class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950" />
+                    </label>
 
-                <button type="submit"
-                        class="rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700">
-                    Find a court
-                </button>
-            </form>
+                    <button type="submit"
+                            class="rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                        Find a court
+                    </button>
+                </form>
 
-            @guest
-                <p class="mt-3 text-xs text-zinc-500">Log in or sign up to see live availability and book your slot.</p>
-                <p class="mt-4 text-sm text-zinc-500">
-                    Own a venue?
-                    <a href="{{ route('for-business') }}" class="font-medium text-blue-600 hover:underline dark:text-blue-400">List your venue →</a>
-                </p>
-            @endguest
+                @guest
+                    <p class="mt-3 text-center text-xs text-zinc-500">Log in or sign up to see live availability and book your slot.</p>
+                    <p class="mt-4 text-center text-sm text-zinc-500">
+                        Own a venue?
+                        <a href="{{ route('for-business') }}" class="font-medium text-blue-600 hover:underline dark:text-blue-400">List your venue →</a>
+                    </p>
+                @endguest
+            </div>
         </section>
 
         {{-- Browse by sport — popular shortcuts, with a "Show all" toggle for every category. --}}
         @if ($sports->isNotEmpty())
-            @php($emojis = config('courtgo.sport_emojis'))
             <section x-data="{ showAll: false }" class="mx-auto max-w-6xl px-6 pb-8">
                 <h2 class="text-center text-sm font-semibold uppercase tracking-wide text-zinc-500">Browse by sport</h2>
 
@@ -133,8 +83,8 @@
                     @foreach ($sports as $s)
                         <a href="{{ route('courts.browse', ['sport' => $s]) }}"
                            @if (! $popularSports->contains($s)) x-show="showAll" x-cloak @endif
-                           class="flex items-center gap-2 rounded-full border border-zinc-200 px-4 py-2 text-sm font-medium hover:border-blue-400 hover:text-blue-600 dark:border-zinc-800 dark:hover:text-blue-400">
-                            <span class="text-lg leading-none">{{ $emojis[$s] ?? '🏅' }}</span>
+                           class="flex items-center gap-2 rounded-full border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:border-blue-400 hover:text-blue-600 dark:border-zinc-800 dark:text-zinc-300 dark:hover:text-blue-400">
+                            <x-sport-icon :sport="$s" class="size-5 shrink-0 text-blue-600 dark:text-blue-400" />
                             {{ $s }}
                         </a>
                     @endforeach

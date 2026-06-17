@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Sports court">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2563eb"/>
+      <stop offset="0.5" stop-color="#1e40af"/>
+      <stop offset="1" stop-color="#172554"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.8" cy="0.18" r="0.75">
+      <stop offset="0" stop-color="#60a5fa" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#60a5fa" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1600" height="600" fill="url(#bg)"/>
+  <rect width="1600" height="600" fill="url(#glow)"/>
+
+  <!-- Stylised court: outer lines, halfway line and centre circle -->
+  <g stroke="#ffffff" stroke-opacity="0.12" stroke-width="2.5" fill="none">
+    <rect x="120" y="90" width="1360" height="420" rx="12"/>
+    <line x1="800" y1="90" x2="800" y2="510"/>
+    <circle cx="800" cy="300" r="92"/>
+    <line x1="120" y1="300" x2="1480" y2="300"/>
+    <rect x="120" y="210" width="150" height="180"/>
+    <rect x="1330" y="210" width="150" height="180"/>
+  </g>
+
+  <!-- Floating balls / accents -->
+  <circle cx="1300" cy="148" r="40" fill="#fbbf24" fill-opacity="0.9"/>
+  <path d="M1267 132 Q1300 178 1333 132" stroke="#ffffff" stroke-opacity="0.55" stroke-width="2.5" fill="none"/>
+  <circle cx="250" cy="430" r="26" fill="#ffffff" fill-opacity="0.14"/>
+  <circle cx="1392" cy="452" r="16" fill="#ffffff" fill-opacity="0.16"/>
+  <circle cx="172" cy="168" r="12" fill="#ffffff" fill-opacity="0.18"/>
+</svg>
