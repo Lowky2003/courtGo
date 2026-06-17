@@ -10,7 +10,7 @@ use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
-#[Layout('layouts.app')]
+#[Layout('layouts.customer')]
 #[Title('Book a Court')]
 class VenueShow extends Component
 {

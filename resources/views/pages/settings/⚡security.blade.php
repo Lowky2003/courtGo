@@ -4,10 +4,11 @@ use App\Concerns\PasswordValidationRules;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Change password')] class extends Component {
+new #[Title('Change password')] #[Layout('layouts.customer', ['mainClass' => 'mx-auto max-w-5xl px-6 py-8'])] class extends Component {
     use PasswordValidationRules;
 
     public string $current_password = '';

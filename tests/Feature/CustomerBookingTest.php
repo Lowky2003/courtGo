@@ -151,5 +151,7 @@ test('my bookings shows the customer booking', function () {
 
     $this->actingAs($customer)->get('/my-bookings')
         ->assertOk()
-        ->assertSee($session->court->venue->name);
+        ->assertSee($session->court->venue->name)
+        ->assertSee('Back to homepage')  // customer-layout affordance
+        ->assertDontSee('Platform');     // owner/admin sidebar heading is absent
 });

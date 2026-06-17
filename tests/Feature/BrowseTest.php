@@ -64,6 +64,14 @@ test('the browse page filters venues by state', function () {
         ->assertDontSee('Penang Arena');
 });
 
+test('the browse page uses the sidebar-free customer layout', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('courts.browse'))
+        ->assertOk()
+        ->assertSee('Back to homepage')  // the customer-layout affordance
+        ->assertDontSee('Platform');     // the owner/admin sidebar heading is absent
+});
+
 test('a date with no matching session shows fully booked', function () {
     $date = Carbon::today()->addDays(8);
     browseLiveVenue($date); // session is on $date's weekday only

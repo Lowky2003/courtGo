@@ -1,4 +1,6 @@
 <div class="space-y-8 p-6 max-w-5xl mx-auto w-full">
+    <flux:button size="sm" variant="ghost" :href="route('home')" wire:navigate icon="arrow-left">Back to homepage</flux:button>
+
     <div class="space-y-1">
         <flux:heading size="xl">Find a Court</flux:heading>
         <flux:text>Browse places you can book, then pick a court inside.</flux:text>

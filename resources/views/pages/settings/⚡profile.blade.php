@@ -6,10 +6,11 @@ use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Profile settings')] class extends Component {
+new #[Title('Profile settings')] #[Layout('layouts.customer', ['mainClass' => 'mx-auto max-w-5xl px-6 py-8'])] class extends Component {
     use ProfileValidationRules;
 
     public string $name = '';
