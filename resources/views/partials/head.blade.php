@@ -37,6 +37,12 @@
             var t = e.target;
             if (t && t.matches && t.matches('input[data-no-autofill]')) t.removeAttribute('readonly');
         });
+        // Re-lock on blur so the next focus is guarded again (the field is readonly
+        // at focus time, which is when browsers decide whether to offer autofill).
+        document.addEventListener('focusout', function (e) {
+            var t = e.target;
+            if (t && t.matches && t.matches('input[data-no-autofill]')) t.setAttribute('readonly', 'readonly');
+        });
         document.addEventListener('DOMContentLoaded', lockAll);
         document.addEventListener('livewire:navigated', lockAll);
         document.addEventListener('livewire:init', function () {
@@ -47,5 +53,30 @@
             });
         });
     })();
+</script>
+
+<script>
+    // Shrink large photos in the browser before uploading so venue images
+    // upload quickly even from a phone camera. Falls back to the original file.
+    window.courtgoResizeImage = async function (file, maxDim, quality) {
+        if (! file || ! file.type || file.type.indexOf('image/') !== 0) return file;
+        try {
+            var bitmap = await createImageBitmap(file);
+            var scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+            var w = Math.round(bitmap.width * scale), h = Math.round(bitmap.height * scale);
+            var canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+            var blob = await new Promise(function (res) { canvas.toBlob(res, 'image/jpeg', quality); });
+            if (! blob) return file;
+            return new File([blob], (file.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+        } catch (e) { return file; }
+    };
+    window.courtgoUploadPhoto = async function (event, wire, prop, done) {
+        var file = event.target.files && event.target.files[0];
+        if (! file) { if (done) done(); return; }
+        var toUpload = await window.courtgoResizeImage(file, 1280, 0.82);
+        wire.upload(prop, toUpload, function () { if (done) done(); }, function () { if (done) done(); });
+    };
 </script>
 @fluxAppearance

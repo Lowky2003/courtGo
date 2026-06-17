@@ -16,14 +16,15 @@
                 :options="config('courtgo.states')" wire-model="state" :value="$state" wire:key="venue-state-select" />
         </div>
 
-        {{-- One optional photo of the place, shown to customers. --}}
-        <div>
+        {{-- One optional photo of the place, shown to customers (resized in-browser before upload). --}}
+        <div x-data="{ busy: false }">
             <flux:label>Photo (optional)</flux:label>
-            <input type="file" wire:model="image" accept="image/*"
+            <input type="file" accept="image/*"
+                   x-on:change="busy = true; window.courtgoUploadPhoto($event, $wire, 'image', () => busy = false)"
                    class="mt-1 block w-full text-sm text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-white hover:file:bg-blue-700 dark:text-zinc-300" />
             <flux:error name="image" />
 
-            <div wire:loading wire:target="image" class="mt-2 text-sm text-zinc-500">Uploading…</div>
+            <div x-show="busy" x-cloak class="mt-2 text-sm text-zinc-500">Uploading…</div>
 
             @if ($image)
                 <img src="{{ $image->temporaryUrl() }}" alt="Preview" class="mt-2 h-32 w-full max-w-xs rounded-lg object-cover" />
@@ -93,14 +94,15 @@
 
     {{-- Change-photo modal (closes itself after a successful save) --}}
     <flux:modal name="edit-photo" class="max-w-lg" wire:close="cancelEditPhoto" x-on:photo-saved.window="$flux.modal('edit-photo').close()">
-        <div class="space-y-4">
+        <div class="space-y-4" x-data="{ busy: false }">
             <flux:heading size="lg">Change venue photo</flux:heading>
 
-            <input type="file" wire:model="newImage" accept="image/*"
+            <input type="file" accept="image/*"
+                   x-on:change="busy = true; window.courtgoUploadPhoto($event, $wire, 'newImage', () => busy = false)"
                    class="block w-full text-sm text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-white hover:file:bg-blue-700 dark:text-zinc-300" />
             <flux:error name="newImage" />
 
-            <div wire:loading wire:target="newImage" class="text-sm text-zinc-500">Uploading…</div>
+            <div x-show="busy" x-cloak class="text-sm text-zinc-500">Uploading…</div>
 
             @if ($newImage)
                 <img src="{{ $newImage->temporaryUrl() }}" alt="Preview" class="h-40 w-full rounded-lg object-cover" />

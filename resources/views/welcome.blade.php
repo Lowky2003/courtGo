@@ -104,23 +104,27 @@
             @endguest
         </section>
 
-        {{-- Browse by sport — a few popular shortcuts; the full list is searchable in Find a Court. --}}
-        @if ($popularSports->isNotEmpty())
-            @php($sportIcons = [
-                'Badminton' => 'sparkles', 'Futsal' => 'trophy', 'Football' => 'trophy',
-                'Pickleball' => 'sparkles', 'Tennis' => 'trophy', 'Basketball' => 'trophy',
-                'Table Tennis' => 'sparkles', 'Squash' => 'trophy',
-            ])
-            <section class="mx-auto max-w-6xl px-6 pb-8">
+        {{-- Browse by sport — popular shortcuts, with a "Show all" toggle for every category. --}}
+        @if ($sports->isNotEmpty())
+            @php($emojis = config('courtgo.sport_emojis'))
+            <section x-data="{ showAll: false }" class="mx-auto max-w-6xl px-6 pb-8">
                 <h2 class="text-center text-sm font-semibold uppercase tracking-wide text-zinc-500">Browse by sport</h2>
+
                 <div class="mt-6 flex flex-wrap justify-center gap-3">
-                    @foreach ($popularSports as $s)
+                    @foreach ($sports as $s)
                         <a href="{{ route('courts.browse', ['sport' => $s]) }}"
+                           @if (! $popularSports->contains($s)) x-show="showAll" x-cloak @endif
                            class="flex items-center gap-2 rounded-full border border-zinc-200 px-4 py-2 text-sm font-medium hover:border-blue-400 hover:text-blue-600 dark:border-zinc-800 dark:hover:text-blue-400">
-                            <flux:icon :name="$sportIcons[$s] ?? 'trophy'" class="size-4 text-blue-500" />
+                            <span class="text-lg leading-none">{{ $emojis[$s] ?? '🏅' }}</span>
                             {{ $s }}
                         </a>
                     @endforeach
+                </div>
+
+                <div class="mt-6 text-center">
+                    <button type="button" x-on:click="showAll = ! showAll"
+                            class="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+                            x-text="showAll ? '{{ __('Show fewer') }}' : '{{ __('Show all sports') }}'"></button>
                 </div>
             </section>
         @endif

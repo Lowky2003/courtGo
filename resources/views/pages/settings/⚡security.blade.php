@@ -46,12 +46,6 @@ new #[Title('Change password')] class extends Component {
     <flux:heading class="sr-only">{{ __('Change password') }}</flux:heading>
 
     <x-pages::settings.layout :heading="__('Change password')" :subheading="__('Ensure your account is using a long, random password to stay secure')">
-        <div class="mb-6">
-            <flux:button size="sm" variant="ghost" icon="arrow-left" :href="route('profile.edit')" wire:navigate>
-                {{ __('Back to settings') }}
-            </flux:button>
-        </div>
-
         <form method="POST" wire:submit="updatePassword" class="space-y-6">
             <flux:input
                 wire:model="current_password"

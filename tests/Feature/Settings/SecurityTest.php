@@ -12,27 +12,16 @@ class SecurityTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_change_password_page_can_be_rendered(): void
+    public function test_change_password_page_can_be_rendered_without_confirmation(): void
     {
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->withSession(['auth.password_confirmed_at' => time()])
             ->get(route('security.edit'))
             ->assertOk()
             ->assertSee('Change password')
-            ->assertSee('Back to settings')
             ->assertDontSee('Two-factor authentication')
             ->assertDontSee('Passkeys');
-    }
-
-    public function test_change_password_page_requires_password_confirmation(): void
-    {
-        $user = User::factory()->create();
-
-        $this->actingAs($user)
-            ->get(route('security.edit'))
-            ->assertRedirect(route('password.confirm'));
     }
 
     public function test_password_can_be_updated(): void
