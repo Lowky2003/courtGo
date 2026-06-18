@@ -60,7 +60,7 @@ test('the browse page can filter places by name', function () {
         ->assertDontSee('Beta Hall');
 });
 
-test('the venue page shows available courts for the chosen date', function () {
+test('the venue page shows a bookable calendar grid for the chosen date', function () {
     $date = Carbon::parse('2026-07-06');
     $session = liveCourtSession($date);
 
@@ -68,7 +68,32 @@ test('the venue page shows available courts for the chosen date', function () {
         ->get(route('venues.show', ['venue' => $session->court->venue, 'date' => $date->toDateString()]))
         ->assertOk()
         ->assertSee($session->court->venue->name)
-        ->assertSee($session->court->name);
+        ->assertSee($session->court->name)  // a court column
+        ->assertSee('9:00 AM')              // a time row
+        ->assertSee(                        // the slot is a clickable booking link
+            route('bookings.checkout', ['court' => $session->court, 'session' => $session, 'date' => $date->toDateString()]),
+            escape: false,
+        );
+});
+
+test('a booked slot shows as taken in the calendar grid', function () {
+    config()->set('cashier.secret', null); // demo mode confirms the booking
+    $date = Carbon::parse('2026-07-06');
+    $session = liveCourtSession($date);
+
+    // A customer books the only slot.
+    $this->actingAs(User::factory()->create())
+        ->get(route('bookings.checkout', ['court' => $session->court, 'session' => $session, 'date' => $date->toDateString()]));
+
+    // Another customer now sees it as taken, not clickable.
+    $this->actingAs(User::factory()->create())
+        ->get(route('venues.show', ['venue' => $session->court->venue, 'date' => $date->toDateString()]))
+        ->assertOk()
+        ->assertSee('Booked')
+        ->assertDontSee(
+            route('bookings.checkout', ['court' => $session->court, 'session' => $session, 'date' => $date->toDateString()]),
+            escape: false,
+        );
 });
 
 test('a customer can book a session (demo mode confirms it)', function () {

@@ -23,31 +23,51 @@
         {{-- Step 1: pick a date --}}
         <flux:input type="date" wire:model.live="date" label="1. Choose a date" :min="now()->toDateString()" />
 
-        {{-- Step 2: pick a time, then an available court --}}
+        {{-- Step 2: pick a time + an available court from the calendar grid --}}
         <div>
             <flux:heading size="lg">2. Pick a time &amp; an available court</flux:heading>
 
-            @if ($timeSlots->isEmpty())
+            @if (empty($timeRows) || $courts->isEmpty())
                 <flux:text class="text-zinc-400 mt-2">No times available on this date. Try another day.</flux:text>
             @else
-                <div class="mt-3 space-y-4">
-                    @foreach ($timeSlots as $label => $offers)
-                        @php($first = $offers->first()['session'])
-                        <div class="rounded-lg border border-zinc-200 dark:border-zinc-700 p-4">
-                            <div class="font-medium">
-                                {{ \Illuminate\Support\Carbon::parse($first->start_time)->format('g:i A') }}
-                                – {{ \Illuminate\Support\Carbon::parse($first->end_time)->format('g:i A') }}
-                            </div>
-                            <div class="mt-2 flex flex-wrap gap-2">
-                                @foreach ($offers as $offer)
-                                    <flux:button size="sm" variant="primary" wire:key="slot-{{ $offer['court']->id }}-{{ $offer['session']->id }}"
-                                        href="{{ route('bookings.checkout', ['court' => $offer['court'], 'session' => $offer['session'], 'date' => $date]) }}">
-                                        {{ $offer['court']->name }} · RM {{ number_format($offer['session']->price, 2) }}
-                                    </flux:button>
+                <flux:text class="text-sm text-zinc-500 mt-1">Click an available slot to book it.</flux:text>
+
+                <div class="mt-3 overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700">
+                    <table class="w-full border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-zinc-50 dark:bg-zinc-900">
+                                <th class="sticky left-0 z-10 bg-zinc-50 px-3 py-2 text-left font-medium dark:bg-zinc-900">Time</th>
+                                @foreach ($courts as $court)
+                                    <th class="whitespace-nowrap px-3 py-2 text-center font-medium">{{ $court->name }}</th>
                                 @endforeach
-                            </div>
-                        </div>
-                    @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($timeRows as $row)
+                                <tr class="border-t border-zinc-100 dark:border-zinc-800">
+                                    <td class="sticky left-0 z-10 whitespace-nowrap bg-white px-3 py-2 font-medium dark:bg-zinc-950">
+                                        {{ $row['display'] }}
+                                    </td>
+                                    @foreach ($courts as $court)
+                                        @php($cell = $grid[$court->id][$row['key']] ?? null)
+                                        <td class="px-2 py-2 text-center align-middle">
+                                            @if ($cell && $cell['state'] === 'available')
+                                                <a wire:key="slot-{{ $court->id }}-{{ $cell['session']->id }}"
+                                                   href="{{ route('bookings.checkout', ['court' => $court, 'session' => $cell['session'], 'date' => $date]) }}"
+                                                   class="inline-block w-full min-w-20 rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700">
+                                                    RM {{ number_format($cell['session']->price, 0) }}
+                                                </a>
+                                            @elseif ($cell)
+                                                <span class="inline-block w-full min-w-20 rounded-lg bg-zinc-100 px-3 py-2 text-xs text-zinc-400 line-through dark:bg-zinc-800">Booked</span>
+                                            @else
+                                                <span class="text-zinc-300 dark:text-zinc-600">—</span>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
             @endif
         </div>

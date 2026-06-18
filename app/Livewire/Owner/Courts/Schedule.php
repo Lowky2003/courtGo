@@ -49,6 +49,16 @@ class Schedule extends Component
         $this->court = $court;
     }
 
+    public function updated(string $property): void
+    {
+        // Clear a stale time / "doesn't divide evenly" warning as soon as the
+        // owner adjusts the window or slot length — the live preview already
+        // reflects the new result.
+        if (in_array($property, ['start_time', 'end_time', 'hours_per_slot'], true)) {
+            $this->resetValidation();
+        }
+    }
+
     public function addSession(): void
     {
         $validated = $this->validate([

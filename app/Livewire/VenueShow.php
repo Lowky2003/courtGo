@@ -32,19 +32,56 @@ class VenueShow extends Component
     {
         $availability = app(AvailabilityService::class);
         $date = Carbon::parse($this->date);
+        $weekday = $date->dayOfWeek;
 
-        // Gather every available (court + session) for the chosen date, then group by time slot.
-        $offers = collect();
-        foreach ($this->venue->courts()->bookable()->orderBy('name')->get() as $court) {
-            foreach ($availability->availableSessions($court, $date) as $session) {
-                $offers->push(['court' => $court, 'session' => $session]);
+        $courts = $this->venue->courts()->bookable()->orderBy('name')->get();
+
+        // Build a calendar grid: rows = time slots, columns = courts. Each cell is
+        // bookable (available) or shown as taken, so customers click a free slot.
+        $grid = [];      // court_id => [slot label => ['state' => ..., 'session' => ...]]
+        $rowStarts = []; // slot label => start "HH:MM", for chronological row order
+
+        foreach ($courts as $court) {
+            $available = $availability->availableSessions($court, $date)
+                ->keyBy(fn ($s) => $this->slotLabel($s));
+
+            $scheduled = $court->sessionTemplates()
+                ->where('is_active', true)
+                ->where('day_of_week', $weekday)
+                ->orderBy('start_time')
+                ->get();
+
+            foreach ($scheduled as $session) {
+                $label = $this->slotLabel($session);
+                $rowStarts[$label] = substr((string) $session->start_time, 0, 5);
+                $grid[$court->id][$label] = [
+                    'state' => $available->has($label) ? 'available' : 'taken',
+                    'session' => $session,
+                ];
             }
         }
 
-        $slots = $offers
-            ->groupBy(fn ($o) => substr((string) $o['session']->start_time, 0, 5).'-'.substr((string) $o['session']->end_time, 0, 5))
-            ->sortKeys();
+        asort($rowStarts); // chronological by start time
 
-        return view('livewire.venue-show', ['timeSlots' => $slots]);
+        $timeRows = [];
+        foreach (array_keys($rowStarts) as $label) {
+            [$start, $end] = explode('-', $label);
+            $timeRows[] = [
+                'key' => $label,
+                'display' => Carbon::parse($start)->format('g:i A').' – '.Carbon::parse($end)->format('g:i A'),
+            ];
+        }
+
+        return view('livewire.venue-show', [
+            'courts' => $courts,
+            'timeRows' => $timeRows,
+            'grid' => $grid,
+        ]);
+    }
+
+    /** A stable "HH:MM-HH:MM" key for a session's time slot. */
+    private function slotLabel($session): string
+    {
+        return substr((string) $session->start_time, 0, 5).'-'.substr((string) $session->end_time, 0, 5);
     }
 }

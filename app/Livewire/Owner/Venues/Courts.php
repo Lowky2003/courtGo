@@ -81,6 +81,15 @@ class Courts extends Component
      * submit. Real numbers are clamped to 1–50. Being nullable also means an
      * empty field no longer leaves the typed property unset (which broke the page).
      */
+    public function updated(string $property): void
+    {
+        // Clear a stale slot warning as soon as the owner edits a schedule row —
+        // the live preview already reflects whether the window now divides evenly.
+        if (str_starts_with($property, 'sessions') || str_starts_with($property, 'courtSessions')) {
+            $this->resetValidation();
+        }
+    }
+
     public function updatedCount(): void
     {
         if ($this->count !== null) {
