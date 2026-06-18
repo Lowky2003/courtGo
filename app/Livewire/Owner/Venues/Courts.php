@@ -164,8 +164,8 @@ class Courts extends Component
 
     private function blankSession(): array
     {
-        // A bookable slot, applied across a range of days (default Mon–Fri).
-        return ['from_day' => 1, 'to_day' => 5, 'start_time' => '20:00', 'end_time' => '22:00', 'price' => 40];
+        // A time window split into slots, applied across a range of days (default Mon–Fri).
+        return ['from_day' => 1, 'to_day' => 5, 'start_time' => '20:00', 'end_time' => '22:00', 'hours' => 2, 'price' => 40];
     }
 
     public function addSession(): void
@@ -198,6 +198,7 @@ class Courts extends Component
                 'sessions.*.to_day' => 'required|integer|between:0,6',
                 'sessions.*.start_time' => 'required|date_format:H:i',
                 'sessions.*.end_time' => 'required|date_format:H:i',
+                'sessions.*.hours' => 'required|numeric|min:0.5|max:24',
                 'sessions.*.price' => 'required|numeric|min:0',
             ]
             : [
@@ -205,6 +206,7 @@ class Courts extends Component
                 'courtSessions.*.*.to_day' => 'required|integer|between:0,6',
                 'courtSessions.*.*.start_time' => 'required|date_format:H:i',
                 'courtSessions.*.*.end_time' => 'required|date_format:H:i',
+                'courtSessions.*.*.hours' => 'required|numeric|min:0.5|max:24',
                 'courtSessions.*.*.price' => 'required|numeric|min:0',
             ]);
 
@@ -235,16 +237,21 @@ class Courts extends Component
                     'is_active' => true,
                 ]);
 
-                // Each row becomes one bookable slot per day in its range.
+                // Each row's window is split into equal slots, created for every
+                // day in its range. (validateSchedule already proved it divides evenly.)
                 foreach ($schedules[$i] as $row) {
+                    $slots = $this->buildSlots($row['start_time'], $row['end_time'], (float) $row['hours']);
+
                     foreach ($this->daysInRange($row) as $day) {
-                        $court->sessionTemplates()->create([
-                            'day_of_week' => $day,
-                            'start_time' => $row['start_time'],
-                            'end_time' => $row['end_time'],
-                            'price' => $row['price'],
-                            'is_active' => true,
-                        ]);
+                        foreach ($slots as $slot) {
+                            $court->sessionTemplates()->create([
+                                'day_of_week' => $day,
+                                'start_time' => $slot['start'],
+                                'end_time' => $slot['end'],
+                                'price' => $row['price'],
+                                'is_active' => true,
+                            ]);
+                        }
                     }
                 }
             }
@@ -265,6 +272,8 @@ class Courts extends Component
     /** End-after-start and no overlapping slots on any shared day within one court's schedule. */
     private function validateSchedule(array $rows, int $courtIndex): void
     {
+        $byDay = [];
+
         foreach ($rows as $j => $row) {
             // A 00:00 end means midnight (end-of-day); any other end must be later.
             if ($this->slotMinutes($row['end_time'], isEnd: true) <= $this->slotMinutes($row['start_time'])) {
@@ -272,23 +281,32 @@ class Courts extends Component
                     $this->fieldKey($courtIndex, $j, 'end_time') => 'End time must be after start time.',
                 ]);
             }
-        }
 
-        $byDay = [];
-        foreach ($rows as $j => $row) {
-            $start = $this->slotMinutes($row['start_time']);
-            $end = $this->slotMinutes($row['end_time'], isEnd: true);
+            // The window must split evenly into slots of the chosen length.
+            $slots = $this->buildSlots($row['start_time'], $row['end_time'], (float) ($row['hours'] ?? 0));
 
+            if ($slots === null) {
+                throw ValidationException::withMessages([
+                    $this->fieldKey($courtIndex, $j, 'hours') => "That time range doesn't divide evenly into {$row['hours']}-hour slots.",
+                ]);
+            }
+
+            // None of the generated slots may overlap another on the same day.
             foreach ($this->daysInRange($row) as $day) {
-                foreach ($byDay[$day] ?? [] as $existing) {
-                    if ($start < $existing['end'] && $end > $existing['start']) {
-                        throw ValidationException::withMessages([
-                            $this->fieldKey($courtIndex, $j, 'start_time') => 'This overlaps another slot on the same day.',
-                        ]);
-                    }
-                }
+                foreach ($slots as $slot) {
+                    $start = $this->slotMinutes($slot['start']);
+                    $end = $this->slotMinutes($slot['end'], isEnd: true);
 
-                $byDay[$day][] = ['start' => $start, 'end' => $end];
+                    foreach ($byDay[$day] ?? [] as $existing) {
+                        if ($start < $existing['end'] && $end > $existing['start']) {
+                            throw ValidationException::withMessages([
+                                $this->fieldKey($courtIndex, $j, 'start_time') => 'These slots overlap another slot on the same day.',
+                            ]);
+                        }
+                    }
+
+                    $byDay[$day][] = ['start' => $start, 'end' => $end];
+                }
             }
         }
     }

@@ -86,17 +86,21 @@
                         <flux:text class="font-medium">Slots (applied to every court)</flux:text>
 
                         @foreach ($sessions as $i => $row)
-                            <div wire:key="session-{{ $i }}" class="grid grid-cols-2 gap-2 lg:grid-cols-6 lg:items-end">
-                                <flux:select wire:model="sessions.{{ $i }}.from_day" label="From day">
-                                    @foreach ($days as $num => $label)<flux:select.option value="{{ $num }}">{{ $label }}</flux:select.option>@endforeach
-                                </flux:select>
-                                <flux:select wire:model="sessions.{{ $i }}.to_day" label="Until day">
-                                    @foreach ($days as $num => $label)<flux:select.option value="{{ $num }}">{{ $label }}</flux:select.option>@endforeach
-                                </flux:select>
-                                <flux:input type="time" wire:model="sessions.{{ $i }}.start_time" label="From" />
-                                <flux:input type="time" wire:model="sessions.{{ $i }}.end_time" label="Until" />
-                                <flux:input type="number" min="0" step="0.01" wire:model="sessions.{{ $i }}.price" label="Price per slot (RM)" />
-                                <flux:button variant="ghost" icon="trash" wire:click="removeSession({{ $i }})" />
+                            <div wire:key="session-{{ $i }}" class="space-y-2 rounded-lg border border-zinc-100 dark:border-zinc-800 p-3">
+                                <div class="grid grid-cols-2 gap-2 lg:grid-cols-7 lg:items-end">
+                                    <flux:select wire:model.live="sessions.{{ $i }}.from_day" label="From day">
+                                        @foreach ($days as $num => $label)<flux:select.option value="{{ $num }}">{{ $label }}</flux:select.option>@endforeach
+                                    </flux:select>
+                                    <flux:select wire:model.live="sessions.{{ $i }}.to_day" label="Until day">
+                                        @foreach ($days as $num => $label)<flux:select.option value="{{ $num }}">{{ $label }}</flux:select.option>@endforeach
+                                    </flux:select>
+                                    <flux:input type="time" wire:model.live="sessions.{{ $i }}.start_time" label="From" />
+                                    <flux:input type="time" wire:model.live="sessions.{{ $i }}.end_time" label="Until" />
+                                    <flux:input type="number" step="0.5" min="0.5" max="24" wire:model.live="sessions.{{ $i }}.hours" label="Hrs/slot" />
+                                    <flux:input type="number" min="0" step="0.01" wire:model.live="sessions.{{ $i }}.price" label="Price/slot (RM)" />
+                                    <flux:button variant="ghost" icon="trash" wire:click="removeSession({{ $i }})" />
+                                </div>
+                                <x-window-preview :preview="$this->slotPreview($row['start_time'] ?? '', $row['end_time'] ?? '', $row['hours'] ?? null)" :hours="$row['hours'] ?? ''" />
                             </div>
                         @endforeach
 
@@ -109,17 +113,21 @@
                                 <flux:heading size="sm">{{ $courtName }}</flux:heading>
 
                                 @foreach ($courtSessions[$c] ?? [] as $i => $row)
-                                    <div wire:key="court-{{ $c }}-session-{{ $i }}" class="grid grid-cols-2 gap-2 lg:grid-cols-6 lg:items-end">
-                                        <flux:select wire:model="courtSessions.{{ $c }}.{{ $i }}.from_day" label="From day">
-                                            @foreach ($days as $num => $label)<flux:select.option value="{{ $num }}">{{ $label }}</flux:select.option>@endforeach
-                                        </flux:select>
-                                        <flux:select wire:model="courtSessions.{{ $c }}.{{ $i }}.to_day" label="Until day">
-                                            @foreach ($days as $num => $label)<flux:select.option value="{{ $num }}">{{ $label }}</flux:select.option>@endforeach
-                                        </flux:select>
-                                        <flux:input type="time" wire:model="courtSessions.{{ $c }}.{{ $i }}.start_time" label="From" />
-                                        <flux:input type="time" wire:model="courtSessions.{{ $c }}.{{ $i }}.end_time" label="Until" />
-                                        <flux:input type="number" min="0" step="0.01" wire:model="courtSessions.{{ $c }}.{{ $i }}.price" label="Price per slot (RM)" />
-                                        <flux:button variant="ghost" icon="trash" wire:click="removeCourtSession({{ $c }}, {{ $i }})" />
+                                    <div wire:key="court-{{ $c }}-session-{{ $i }}" class="space-y-2 rounded-lg border border-zinc-100 dark:border-zinc-800 p-3">
+                                        <div class="grid grid-cols-2 gap-2 lg:grid-cols-7 lg:items-end">
+                                            <flux:select wire:model.live="courtSessions.{{ $c }}.{{ $i }}.from_day" label="From day">
+                                                @foreach ($days as $num => $label)<flux:select.option value="{{ $num }}">{{ $label }}</flux:select.option>@endforeach
+                                            </flux:select>
+                                            <flux:select wire:model.live="courtSessions.{{ $c }}.{{ $i }}.to_day" label="Until day">
+                                                @foreach ($days as $num => $label)<flux:select.option value="{{ $num }}">{{ $label }}</flux:select.option>@endforeach
+                                            </flux:select>
+                                            <flux:input type="time" wire:model.live="courtSessions.{{ $c }}.{{ $i }}.start_time" label="From" />
+                                            <flux:input type="time" wire:model.live="courtSessions.{{ $c }}.{{ $i }}.end_time" label="Until" />
+                                            <flux:input type="number" step="0.5" min="0.5" max="24" wire:model.live="courtSessions.{{ $c }}.{{ $i }}.hours" label="Hrs/slot" />
+                                            <flux:input type="number" min="0" step="0.01" wire:model.live="courtSessions.{{ $c }}.{{ $i }}.price" label="Price/slot (RM)" />
+                                            <flux:button variant="ghost" icon="trash" wire:click="removeCourtSession({{ $c }}, {{ $i }})" />
+                                        </div>
+                                        <x-window-preview :preview="$this->slotPreview($row['start_time'] ?? '', $row['end_time'] ?? '', $row['hours'] ?? null)" :hours="$row['hours'] ?? ''" />
                                     </div>
                                 @endforeach
 

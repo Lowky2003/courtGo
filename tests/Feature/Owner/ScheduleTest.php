@@ -27,11 +27,47 @@ test('an owner can add a weekly session to their court', function () {
         ->set('day_of_week', 1)
         ->set('start_time', '09:00')
         ->set('end_time', '11:00')
+        ->set('hours_per_slot', 2) // one 2-hour slot
         ->set('price', 40)
         ->call('addSession')
         ->assertHasNoErrors();
 
     expect(SessionTemplate::where('court_id', $court->id)->count())->toBe(1);
+});
+
+test('a time window is split into equal back-to-back slots', function () {
+    [$owner, $court] = makeOwnerCourt();
+
+    Livewire::actingAs($owner)
+        ->test(Schedule::class, ['court' => $court])
+        ->set('day_of_week', 1)
+        ->set('start_time', '18:00')
+        ->set('end_time', '22:00')
+        ->set('hours_per_slot', 2) // 4-hour window ÷ 2h = two slots
+        ->set('price', 40)
+        ->call('addSession')
+        ->assertHasNoErrors();
+
+    $slots = SessionTemplate::where('court_id', $court->id)->orderBy('start_time')->get()
+        ->map(fn ($s) => substr((string) $s->start_time, 0, 5).'-'.substr((string) $s->end_time, 0, 5))->all();
+
+    expect($slots)->toBe(['18:00-20:00', '20:00-22:00']);
+});
+
+test('a window that does not divide evenly into slots is rejected', function () {
+    [$owner, $court] = makeOwnerCourt();
+
+    Livewire::actingAs($owner)
+        ->test(Schedule::class, ['court' => $court])
+        ->set('day_of_week', 1)
+        ->set('start_time', '20:00')
+        ->set('end_time', '23:00') // 3 hours
+        ->set('hours_per_slot', 2) // doesn't fit evenly
+        ->set('price', 40)
+        ->call('addSession')
+        ->assertHasErrors(['hours_per_slot']);
+
+    expect(SessionTemplate::where('court_id', $court->id)->count())->toBe(0);
 });
 
 test('the end time must be after the start time', function () {
@@ -76,6 +112,7 @@ test('adjacent sessions (touching but not overlapping) are allowed', function ()
         ->set('day_of_week', 1)
         ->set('start_time', '11:00') // starts exactly when the other ends
         ->set('end_time', '13:00')
+        ->set('hours_per_slot', 2) // one 2-hour slot
         ->set('price', 40)
         ->call('addSession')
         ->assertHasNoErrors();
@@ -91,11 +128,14 @@ test('a session can end at midnight', function () {
         ->set('day_of_week', 5)
         ->set('start_time', '20:00')
         ->set('end_time', '00:00') // midnight — treated as end-of-day
+        ->set('hours_per_slot', 2) // 8pm–midnight ÷ 2h = two slots, the last ending at midnight
         ->set('price', 40)
         ->call('addSession')
         ->assertHasNoErrors();
 
-    expect(SessionTemplate::where('court_id', $court->id)->count())->toBe(1);
+    expect(SessionTemplate::where('court_id', $court->id)->count())->toBe(2);
+    expect(SessionTemplate::where('court_id', $court->id)->get()
+        ->contains(fn ($s) => substr((string) $s->end_time, 0, 5) === '00:00'))->toBeTrue();
 });
 
 test('a slot that runs past midnight is still rejected', function () {

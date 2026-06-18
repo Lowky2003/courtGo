@@ -30,10 +30,11 @@ class Schedule extends Component
 
     public Court $court;
 
-    // Add-session form
+    // Add-session form (no default start/end — the owner fills them in).
     public int $day_of_week = 1;
-    public string $start_time = '09:00';
-    public string $end_time = '11:00';
+    public string $start_time = '';
+    public string $end_time = '';
+    public $hours_per_slot = 1; // length of each bookable slot, in hours
     public $price = 40;
 
     // Block-date form
@@ -54,40 +55,58 @@ class Schedule extends Component
             'day_of_week' => 'required|integer|between:0,6',
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i',
+            'hours_per_slot' => 'required|numeric|min:0.5|max:24',
             'price' => 'required|numeric|min:0',
         ]);
 
         // A 00:00 end means midnight (end-of-day); any other end must be later.
-        $start = $this->slotMinutes($validated['start_time']);
-        $end = $this->slotMinutes($validated['end_time'], isEnd: true);
-
-        if ($end <= $start) {
+        if ($this->slotMinutes($validated['end_time'], isEnd: true) <= $this->slotMinutes($validated['start_time'])) {
             throw ValidationException::withMessages([
                 'end_time' => 'End time must be after start time.',
             ]);
         }
 
-        // Reject sessions that overlap an existing active session on the same weekday
-        // (compared in minutes so a midnight end is handled correctly).
-        $overlaps = $this->court->sessionTemplates()
-            ->where('is_active', true)
-            ->where('day_of_week', $validated['day_of_week'])
-            ->get()
-            ->contains(fn ($existing) => $start < $this->slotMinutes((string) $existing->end_time, isEnd: true)
-                && $end > $this->slotMinutes((string) $existing->start_time));
+        // Split the window into back-to-back slots of the chosen length.
+        $slots = $this->buildSlots($validated['start_time'], $validated['end_time'], (float) $validated['hours_per_slot']);
 
-        if ($overlaps) {
+        if ($slots === null) {
             throw ValidationException::withMessages([
-                'start_time' => 'This overlaps a session you already have on that day.',
+                'hours_per_slot' => "That time range doesn't divide evenly into {$validated['hours_per_slot']}-hour slots.",
             ]);
         }
 
-        $this->court->sessionTemplates()->create($validated + ['is_active' => true]);
+        // No generated slot may overlap a session that already exists on that day
+        // (compared in minutes so a midnight end is handled correctly).
+        $existing = $this->court->sessionTemplates()
+            ->where('is_active', true)
+            ->where('day_of_week', $validated['day_of_week'])
+            ->get();
 
-        $this->reset('start_time', 'end_time', 'price');
-        $this->start_time = '09:00';
-        $this->end_time = '11:00';
-        $this->price = 40;
+        foreach ($slots as $slot) {
+            $start = $this->slotMinutes($slot['start']);
+            $end = $this->slotMinutes($slot['end'], isEnd: true);
+
+            $clashes = $existing->contains(fn ($s) => $start < $this->slotMinutes((string) $s->end_time, isEnd: true)
+                && $end > $this->slotMinutes((string) $s->start_time));
+
+            if ($clashes) {
+                throw ValidationException::withMessages([
+                    'start_time' => "Slot {$slot['start']}–{$slot['end']} overlaps a session you already have on that day.",
+                ]);
+            }
+        }
+
+        foreach ($slots as $slot) {
+            $this->court->sessionTemplates()->create([
+                'day_of_week' => $validated['day_of_week'],
+                'start_time' => $slot['start'],
+                'end_time' => $slot['end'],
+                'price' => $validated['price'],
+                'is_active' => true,
+            ]);
+        }
+
+        $this->reset('start_time', 'end_time');
     }
 
     public function deleteSession(int $sessionId): void
@@ -125,6 +144,7 @@ class Schedule extends Component
                 ->groupBy('day_of_week'),
             'blockedDates' => $this->court->blockedDates()->orderBy('date')->get(),
             'days' => self::DAYS,
+            'preview' => $this->slotPreview($this->start_time, $this->end_time, $this->hours_per_slot),
         ]);
     }
 }

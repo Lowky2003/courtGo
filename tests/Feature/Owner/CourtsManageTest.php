@@ -53,11 +53,36 @@ test('the wizard accepts a slot that ends at midnight', function () {
         ->set('sessions.0.to_day', 5)
         ->set('sessions.0.start_time', '20:00')
         ->set('sessions.0.end_time', '00:00') // midnight
+        ->set('sessions.0.hours', 2)          // 8pm–midnight ÷ 2h = two slots
         ->set('sessions.0.price', 40)
         ->call('create')
         ->assertHasNoErrors();
 
-    expect($venue->courts()->first()->sessionTemplates()->count())->toBe(1);
+    expect($venue->courts()->first()->sessionTemplates()->count())->toBe(2);
+});
+
+test('the wizard rejects a window that does not divide evenly into slots', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->for($owner, 'owner')->create();
+
+    Livewire::actingAs($owner)
+        ->test(Courts::class, ['venue' => $venue])
+        ->call('startWizard')
+        ->set('sport', 'Badminton')
+        ->set('count', 1)
+        ->call('toStep2')
+        ->set('scheduleMode', 'same')
+        ->call('toStep3')
+        ->set('sessions.0.from_day', 1)
+        ->set('sessions.0.to_day', 1)
+        ->set('sessions.0.start_time', '20:00')
+        ->set('sessions.0.end_time', '23:00') // 3 hours
+        ->set('sessions.0.hours', 2)          // doesn't fit
+        ->set('sessions.0.price', 40)
+        ->call('create')
+        ->assertHasErrors();
+
+    expect($venue->courts()->count())->toBe(0);
 });
 
 test('clearing the court count no longer crashes and defaults to one court', function () {
@@ -127,11 +152,13 @@ test('the wizard creates lettered courts with different schedules', function () 
         ->set('courtSessions.0.0.to_day', 1)
         ->set('courtSessions.0.0.start_time', '18:00')
         ->set('courtSessions.0.0.end_time', '19:00')
+        ->set('courtSessions.0.0.hours', 1)
         ->set('courtSessions.0.0.price', 30)
         ->set('courtSessions.1.0.from_day', 2)
         ->set('courtSessions.1.0.to_day', 2)
         ->set('courtSessions.1.0.start_time', '09:00')
         ->set('courtSessions.1.0.end_time', '10:00')
+        ->set('courtSessions.1.0.hours', 1)
         ->set('courtSessions.1.0.price', 50)
         ->call('create')
         ->assertHasNoErrors();
