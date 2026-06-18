@@ -74,17 +74,16 @@ class Courts extends Component
     }
 
     /**
-     * Keep the court count within bounds. Clearing the field sends null/empty,
-     * so snap it back to 1 — the field is never left blank, and the typed
-     * property is never left unset (which previously broke the page).
+     * Keep the court count within bounds as it's typed. A cleared field (null)
+     * is left blank so it doesn't fight live typing — it defaults to 1 court on
+     * submit. Real numbers are clamped to 1–50. Being nullable also means an
+     * empty field no longer leaves the typed property unset (which broke the page).
      */
     public function updatedCount(): void
     {
-        $this->count = match (true) {
-            $this->count === null, $this->count < 1 => 1,
-            $this->count > 50 => 50,
-            default => $this->count,
-        };
+        if ($this->count !== null) {
+            $this->count = max(1, min($this->count, 50));
+        }
     }
 
     /** The sport to save — the chosen list value, or the custom name when "Other". */

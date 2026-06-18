@@ -37,7 +37,7 @@ test('the wizard creates numbered courts that share one schedule', function () {
     expect($venue->courts->every(fn ($court) => $court->sessionTemplates()->count() === 1))->toBeTrue();
 });
 
-test('clearing the court count snaps back to the minimum instead of crashing', function () {
+test('clearing the court count no longer crashes and defaults to one court', function () {
     $owner = User::factory()->create(['role' => UserRole::Owner]);
     $venue = Venue::factory()->for($owner, 'owner')->create();
 
@@ -46,17 +46,19 @@ test('clearing the court count snaps back to the minimum instead of crashing', f
         ->call('startWizard')
         ->set('sport', 'Badminton')
         ->set('count', '')         // emptying the field no longer throws PropertyNotFoundException
-        ->assertSet('count', 1)    // it snaps back to the minimum (1 court)
+        ->assertSet('count', null) // it's left blank (so it doesn't fight live typing)
         ->call('toStep2')
-        ->assertHasNoErrors()
-        ->assertSet('step', 2);    // and the wizard proceeds normally
+        ->assertHasNoErrors()      // and defaults to one court on submit
+        ->assertSet('step', 2);
 
-    // An out-of-range value is also clamped.
+    // Real out-of-range numbers are clamped into 1–50 as they're typed.
     Livewire::actingAs($owner)
         ->test(Courts::class, ['venue' => $venue])
         ->call('startWizard')
         ->set('count', 999)
-        ->assertSet('count', 50);
+        ->assertSet('count', 50)
+        ->set('count', 0)
+        ->assertSet('count', 1);
 });
 
 test('a day range creates one slot per day', function () {

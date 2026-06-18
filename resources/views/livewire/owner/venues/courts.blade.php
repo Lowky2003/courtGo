@@ -27,7 +27,7 @@
                         wire-model="sport"
                         :live="true"
                         :value="$sport" />
-                    <flux:input type="number" min="1" max="50" wire:model.blur="count" label="How many courts?" />
+                    <flux:input type="number" min="1" max="50" wire:model.live="count" label="How many courts?" />
                 </div>
 
                 @if ($sport === 'Other')
