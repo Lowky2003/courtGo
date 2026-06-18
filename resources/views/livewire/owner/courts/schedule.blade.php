@@ -25,23 +25,8 @@
             <flux:input wire:model.live="price" type="number" step="0.01" min="0" label="Price per slot (RM)" />
         </div>
 
-        {{-- Live preview of the slots that will be created --}}
-        @if ($preview['state'] === 'ok')
-            <div class="rounded-lg bg-zinc-50 dark:bg-zinc-900 p-4">
-                <flux:text class="text-sm font-medium">Preview — creates {{ count($preview['slots']) }} slot{{ count($preview['slots']) === 1 ? '' : 's' }}:</flux:text>
-                <div class="mt-2 flex flex-wrap gap-2">
-                    @foreach ($preview['slots'] as $slot)
-                        <flux:badge size="sm" color="blue">
-                            {{ \Illuminate\Support\Carbon::parse($slot['start'])->format('g:i A') }}–{{ \Illuminate\Support\Carbon::parse($slot['end'])->format('g:i A') }}
-                        </flux:badge>
-                    @endforeach
-                </div>
-            </div>
-        @elseif ($preview['state'] === 'mismatch')
-            <flux:callout variant="warning" icon="exclamation-triangle">
-                <flux:callout.text>That time range doesn't divide evenly into {{ $hours_per_slot }}-hour slots. Adjust the window or the hours per slot.</flux:callout.text>
-            </flux:callout>
-        @endif
+        {{-- Live preview of the slots that will be created (matches the court preview). --}}
+        <x-window-preview :preview="$preview" :hours="$hours_per_slot" />
 
         <flux:button type="submit" variant="primary">Add slots</flux:button>
     </form>

@@ -1,15 +1,24 @@
 @props(['preview' => ['state' => 'empty', 'slots' => []], 'hours' => ''])
 
-{{-- Shows the slots a window+duration would create, or a "doesn't match" hint.
-     (Named window-preview, not slot-preview — an "x-slot…" name collides with
-     Blade's <x-slot> directive.) --}}
+{{-- Shows the slots a window+duration would create, styled like the court-name
+     preview (boxed "Preview" + blue badges), or a "doesn't match" hint.
+     Named window-preview, not slot-preview — an "x-slot…" name collides with
+     Blade's <x-slot> directive. --}}
 @if ($preview['state'] === 'ok')
-    <flux:text class="text-xs text-zinc-500">
-        Creates {{ count($preview['slots']) }} slot{{ count($preview['slots']) === 1 ? '' : 's' }}:
-        @foreach ($preview['slots'] as $slot){{ \Illuminate\Support\Carbon::parse($slot['start'])->format('g:i A') }}–{{ \Illuminate\Support\Carbon::parse($slot['end'])->format('g:i A') }}@unless ($loop->last), @endunless @endforeach
-    </flux:text>
+    <div class="rounded-lg bg-zinc-50 dark:bg-zinc-900 p-4">
+        <flux:text class="text-sm font-medium">Preview — {{ count($preview['slots']) }} slot{{ count($preview['slots']) === 1 ? '' : 's' }}</flux:text>
+        <div class="mt-2 flex flex-wrap gap-2">
+            @foreach ($preview['slots'] as $slot)
+                <flux:badge size="sm" color="blue">
+                    {{ \Illuminate\Support\Carbon::parse($slot['start'])->format('g:i A') }}–{{ \Illuminate\Support\Carbon::parse($slot['end'])->format('g:i A') }}
+                </flux:badge>
+            @endforeach
+        </div>
+    </div>
 @elseif ($preview['state'] === 'mismatch')
-    <flux:text class="text-xs font-medium text-amber-600 dark:text-amber-500">
-        ⚠ This range doesn't divide evenly into {{ $hours }}-hour slots.
-    </flux:text>
+    <div class="rounded-lg bg-amber-50 dark:bg-amber-900/20 p-4">
+        <flux:text class="text-sm font-medium text-amber-700 dark:text-amber-400">
+            ⚠ This range doesn't divide evenly into {{ $hours }}-hour slots
+        </flux:text>
+    </div>
 @endif
