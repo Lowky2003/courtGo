@@ -32,7 +32,7 @@ class Courts extends Component
     // Step 1: basics + auto-naming
     public string $sport = '';
     public string $customSport = ''; // used when $sport === 'Other'
-    public int $count = 1;
+    public ?int $count = 1; // nullable so emptying the field becomes null, not an error
     public string $namingStyle = 'number'; // number | letter
     public string $prefix = 'Court';       // the name owners type; numbers/letters are appended
 
@@ -73,6 +73,20 @@ class Courts extends Component
         ]);
     }
 
+    /**
+     * Keep the court count within bounds. Clearing the field sends null/empty,
+     * so snap it back to 1 — the field is never left blank, and the typed
+     * property is never left unset (which previously broke the page).
+     */
+    public function updatedCount(): void
+    {
+        $this->count = match (true) {
+            $this->count === null, $this->count < 1 => 1,
+            $this->count > 50 => 50,
+            default => $this->count,
+        };
+    }
+
     /** The sport to save — the chosen list value, or the custom name when "Other". */
     public function effectiveSport(): string
     {
@@ -83,7 +97,7 @@ class Courts extends Component
     public function generatedNames(): array
     {
         $names = [];
-        $count = max(0, min($this->count, 50));
+        $count = max(0, min((int) $this->count, 50)); // (int) null → 0 while the field is empty
         $prefix = trim($this->prefix);
 
         for ($i = 0; $i < $count; $i++) {

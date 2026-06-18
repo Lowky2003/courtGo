@@ -37,6 +37,28 @@ test('the wizard creates numbered courts that share one schedule', function () {
     expect($venue->courts->every(fn ($court) => $court->sessionTemplates()->count() === 1))->toBeTrue();
 });
 
+test('clearing the court count snaps back to the minimum instead of crashing', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->for($owner, 'owner')->create();
+
+    Livewire::actingAs($owner)
+        ->test(Courts::class, ['venue' => $venue])
+        ->call('startWizard')
+        ->set('sport', 'Badminton')
+        ->set('count', '')         // emptying the field no longer throws PropertyNotFoundException
+        ->assertSet('count', 1)    // it snaps back to the minimum (1 court)
+        ->call('toStep2')
+        ->assertHasNoErrors()
+        ->assertSet('step', 2);    // and the wizard proceeds normally
+
+    // An out-of-range value is also clamped.
+    Livewire::actingAs($owner)
+        ->test(Courts::class, ['venue' => $venue])
+        ->call('startWizard')
+        ->set('count', 999)
+        ->assertSet('count', 50);
+});
+
 test('a day range creates one slot per day', function () {
     $owner = User::factory()->create(['role' => UserRole::Owner]);
     $venue = Venue::factory()->for($owner, 'owner')->create();
@@ -197,7 +219,7 @@ test('the wizard requires at least one slot per court', function () {
     expect($venue->courts()->count())->toBe(0);
 });
 
-test('the wizard requires a sport and at least one court', function () {
+test('the wizard requires a sport, and clamps the court count to at least one', function () {
     $owner = User::factory()->create(['role' => UserRole::Owner]);
     $venue = Venue::factory()->for($owner, 'owner')->create();
 
@@ -205,9 +227,11 @@ test('the wizard requires a sport and at least one court', function () {
         ->test(Courts::class, ['venue' => $venue])
         ->call('startWizard')
         ->set('sport', '')
-        ->set('count', 0)
+        ->set('count', 0)          // below the minimum…
+        ->assertSet('count', 1)    // …is clamped to 1 court rather than erroring
         ->call('toStep2')
-        ->assertHasErrors(['sport', 'count']);
+        ->assertHasErrors('sport') // but a sport is still required to proceed
+        ->assertSet('step', 1);
 });
 
 test('lettered naming is capped at 26 courts', function () {
