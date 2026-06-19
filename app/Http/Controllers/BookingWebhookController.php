@@ -25,9 +25,13 @@ class BookingWebhookController extends Controller
 
         $type = $payload['type'] ?? null;
         $session = $payload['data']['object'] ?? [];
-        $bookingId = $session['metadata']['booking_id'] ?? null;
 
-        if (! $bookingId) {
+        // One session may pay for several bookings (booking_ids). Older single-slot
+        // sessions used booking_id — accept both.
+        $raw = $session['metadata']['booking_ids'] ?? ($session['metadata']['booking_id'] ?? '');
+        $bookingIds = array_filter(array_map('intval', explode(',', (string) $raw)));
+
+        if (empty($bookingIds)) {
             return response('No booking', 200);
         }
 
@@ -36,9 +40,13 @@ class BookingWebhookController extends Controller
             if (($session['payment_status'] ?? 'unpaid') === 'unpaid') {
                 return response('Awaiting payment', 200); // async not settled yet
             }
-            $this->confirm((int) $bookingId, $session);
+            foreach ($bookingIds as $id) {
+                $this->confirm($id, $session);
+            }
         } elseif (in_array($type, ['checkout.session.async_payment_failed', 'checkout.session.expired'], true)) {
-            $this->release((int) $bookingId);
+            foreach ($bookingIds as $id) {
+                $this->release($id);
+            }
         }
 
         return response('Webhook handled', 200);

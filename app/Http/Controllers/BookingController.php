@@ -88,6 +88,26 @@ class BookingController extends Controller
         return redirect()->route('bookings.success', $booking)->with('demo_paid', true);
     }
 
+    /** Return URL after a combined (multi-slot) payment — the webhook confirms the bookings. */
+    public function cartSuccess()
+    {
+        return redirect()->route('bookings.mine')->with('booking_confirmed', true);
+    }
+
+    /** Cancel a combined payment: release the still-pending holds it created. */
+    public function cartCancel(Request $request)
+    {
+        $ids = array_filter(array_map('intval', explode(',', (string) $request->query('bookings', ''))));
+
+        Booking::query()
+            ->whereIn('id', $ids)
+            ->where('customer_id', $request->user()->id)
+            ->where('status', BookingStatus::Pending->value)
+            ->update(['status' => BookingStatus::Cancelled->value]);
+
+        return redirect()->route('bookings.mine')->with('booking_error', 'Payment was cancelled.');
+    }
+
     public function success(Booking $booking)
     {
         abort_unless($booking->customer_id === auth()->id(), 403);

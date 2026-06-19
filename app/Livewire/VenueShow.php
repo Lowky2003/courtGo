@@ -2,9 +2,15 @@
 
 namespace App\Livewire;
 
+use App\Enums\BookingStatus;
+use App\Exceptions\SlotUnavailableException;
+use App\Models\SessionTemplate;
 use App\Models\Venue;
 use App\Services\AvailabilityService;
+use App\Services\BookingPaymentService;
+use App\Services\BookingService;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -19,6 +25,9 @@ class VenueShow extends Component
     #[Url]
     public string $date = '';
 
+    /** Selected slot keys, "courtId-sessionId". */
+    public array $selected = [];
+
     public function mount(Venue $venue): void
     {
         $this->venue = $venue;
@@ -26,6 +35,68 @@ class VenueShow extends Component
         if ($this->date === '') {
             $this->date = Carbon::tomorrow()->toDateString();
         }
+    }
+
+    /** Changing the date clears the selection — the slots differ. */
+    public function updatedDate(): void
+    {
+        $this->selected = [];
+    }
+
+    public function toggleSlot(int $courtId, int $sessionId): void
+    {
+        $key = $courtId.'-'.$sessionId;
+
+        $this->selected = in_array($key, $this->selected, true)
+            ? array_values(array_diff($this->selected, [$key]))
+            : [...$this->selected, $key];
+    }
+
+    /** Reserve every selected slot (all-or-nothing) and pay for them in one go. */
+    public function checkout(BookingService $bookings, BookingPaymentService $payments)
+    {
+        $sessions = $this->selectedSessions();
+
+        if ($sessions->isEmpty()) {
+            return null;
+        }
+
+        try {
+            $created = $bookings->reserveMany(auth()->user(), $sessions, Carbon::parse($this->date));
+        } catch (SlotUnavailableException $e) {
+            $this->selected = [];
+            session()->flash('booking_error', $e->getMessage());
+
+            return null;
+        }
+
+        // Real Stripe Checkout: one payment for all the slots.
+        if (config('cashier.secret')) {
+            return redirect($payments->checkoutUrlForBookings(
+                $created,
+                route('bookings.cart.success'),
+                route('bookings.cart.cancel', ['bookings' => collect($created)->pluck('id')->implode(',')]),
+            ));
+        }
+
+        // Demo mode (no Stripe keys): confirm all so the flow can be tried.
+        foreach ($created as $booking) {
+            $booking->update(['status' => BookingStatus::Confirmed, 'payment_status' => 'paid', 'processed_at' => now()]);
+        }
+
+        return redirect()->route('bookings.mine')->with('booking_confirmed', true);
+    }
+
+    /** The currently selected sessions, validated to belong to this venue. */
+    private function selectedSessions(): Collection
+    {
+        $sessionIds = collect($this->selected)->map(fn ($key) => (int) explode('-', $key)[1]);
+
+        return SessionTemplate::query()
+            ->whereIn('id', $sessionIds)
+            ->whereHas('court', fn ($q) => $q->where('venue_id', $this->venue->id))
+            ->with('court')
+            ->get();
     }
 
     public function render()
@@ -73,10 +144,18 @@ class VenueShow extends Component
             ];
         }
 
+        $selectedSessions = $this->selectedSessions();
+
         return view('livewire.venue-show', [
             'courts' => $courts,
             'timeColumns' => $timeColumns,
             'grid' => $grid,
+            'selectedSummary' => $selectedSessions->map(fn ($s) => [
+                'court' => $s->court->name,
+                'time' => Carbon::parse($s->start_time)->format('g:i A').'–'.Carbon::parse($s->end_time)->format('g:i A'),
+                'price' => (float) $s->price,
+            ]),
+            'selectedTotal' => (float) $selectedSessions->sum('price'),
         ]);
     }
 

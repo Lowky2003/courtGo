@@ -18,6 +18,27 @@ class BookingService
     }
 
     /**
+     * Reserve several sessions on one date as a single all-or-nothing hold —
+     * if any slot is unavailable, none are held. Used for "pick many, pay once".
+     *
+     * @param  iterable<int, SessionTemplate>  $sessions
+     * @return array<int, Booking>
+     *
+     * @throws SlotUnavailableException
+     */
+    public function reserveMany(User $customer, iterable $sessions, Carbon $date): array
+    {
+        return DB::transaction(function () use ($customer, $sessions, $date) {
+            $bookings = [];
+            foreach ($sessions as $session) {
+                $bookings[] = $this->reserve($customer, $session, $date);
+            }
+
+            return $bookings;
+        });
+    }
+
+    /**
      * Reserve a session by creating a short-lived "pending" hold.
      * The customer then pays; the booking is confirmed by the payment webhook.
      *

@@ -30,7 +30,7 @@
             @if (empty($timeColumns) || $courts->isEmpty())
                 <flux:text class="text-zinc-400 mt-2">No times available on this date. Try another day.</flux:text>
             @else
-                <flux:text class="text-sm text-zinc-500 mt-1">Click an available slot to book it.</flux:text>
+                <flux:text class="text-sm text-zinc-500 mt-1">Tap the slots you want — then book and pay for them all at once.</flux:text>
 
                 {{-- Calendar: courts down the left, the owner's time slots across the top. --}}
                 <div class="mt-3 overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700">
@@ -53,12 +53,14 @@
                                         @php($cell = $grid[$court->id][$col['key']] ?? null)
                                         <td class="px-1.5 py-1.5 text-center align-middle">
                                             @if ($cell && $cell['state'] === 'available')
-                                                <a wire:key="slot-{{ $court->id }}-{{ $cell['session']->id }}"
-                                                   href="{{ route('bookings.checkout', ['court' => $court, 'session' => $cell['session'], 'date' => $date]) }}"
+                                                @php($slotKey = $court->id.'-'.$cell['session']->id)
+                                                @php($isSelected = in_array($slotKey, $selected, true))
+                                                <button type="button" wire:key="slot-{{ $slotKey }}"
+                                                   wire:click="toggleSlot({{ $court->id }}, {{ $cell['session']->id }})"
                                                    title="{{ $col['display'] }}"
-                                                   class="inline-block w-full min-w-20 rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700">
-                                                    RM {{ number_format($cell['session']->price, 0) }}
-                                                </a>
+                                                   class="inline-block w-full min-w-20 rounded-lg px-3 py-2 text-xs font-medium text-white {{ $isSelected ? 'bg-blue-800 ring-2 ring-blue-400 ring-offset-1 dark:ring-offset-zinc-950' : 'bg-blue-600 hover:bg-blue-700' }}">
+                                                    {{ $isSelected ? '✓ ' : '' }}RM {{ number_format($cell['session']->price, 0) }}
+                                                </button>
                                             @elseif ($cell)
                                                 <span class="inline-block w-full min-w-20 rounded-lg bg-zinc-100 px-3 py-2 text-xs text-zinc-400 line-through dark:bg-zinc-800">Booked</span>
                                             @else
@@ -71,6 +73,27 @@
                         </tbody>
                     </table>
                 </div>
+
+                {{-- Selected slots → pay for all at once --}}
+                @if ($selectedSummary->isNotEmpty())
+                    <div class="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/30">
+                        <flux:heading size="sm">Selected slots ({{ $selectedSummary->count() }})</flux:heading>
+                        <ul class="mt-2 space-y-1 text-sm">
+                            @foreach ($selectedSummary as $item)
+                                <li class="flex justify-between gap-4">
+                                    <span>{{ $item['court'] }} · {{ $item['time'] }}</span>
+                                    <span class="text-zinc-600 dark:text-zinc-300">RM {{ number_format($item['price'], 2) }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                        <div class="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-blue-200 pt-3 dark:border-blue-900">
+                            <span class="font-semibold">Total: RM {{ number_format($selectedTotal, 2) }}</span>
+                            <flux:button variant="primary" wire:click="checkout" wire:loading.attr="disabled" wire:target="checkout">
+                                Book &amp; pay
+                            </flux:button>
+                        </div>
+                    </div>
+                @endif
             @endif
         </div>
     </div>

@@ -2,12 +2,32 @@
 
 use App\Enums\BookingStatus;
 use App\Enums\UserRole;
+use App\Livewire\VenueShow;
 use App\Models\Booking;
 use App\Models\Court;
 use App\Models\SessionTemplate;
 use App\Models\User;
 use App\Models\Venue;
+use App\Services\BookingService;
 use Illuminate\Support\Carbon;
+use Livewire\Livewire;
+
+/** A live venue with two courts, each having one session on $date. */
+function liveTwoCourtVenue(Carbon $date): array
+{
+    $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
+    $owner->subscriptions()->create([
+        'type' => 'default', 'stripe_id' => 'sub_'.uniqid(), 'stripe_status' => 'active',
+        'stripe_price' => 'price_test', 'quantity' => 1,
+    ]);
+    $venue = Venue::factory()->for($owner, 'owner')->create();
+    $courtA = Court::factory()->for($venue)->create(['is_active' => true, 'name' => 'Court A']);
+    $courtB = Court::factory()->for($venue)->create(['is_active' => true, 'name' => 'Court B']);
+    $sA = SessionTemplate::factory()->for($courtA)->create(['day_of_week' => $date->dayOfWeek, 'start_time' => '09:00', 'end_time' => '11:00', 'price' => 40]);
+    $sB = SessionTemplate::factory()->for($courtB)->create(['day_of_week' => $date->dayOfWeek, 'start_time' => '09:00', 'end_time' => '11:00', 'price' => 50]);
+
+    return [$venue, $courtA, $courtB, $sA, $sB];
+}
 
 /** A session on a court whose owner is live (subscribed + Connect-onboarded). */
 function liveCourtSession(Carbon $date): SessionTemplate
@@ -68,12 +88,9 @@ test('the venue page shows a bookable calendar grid for the chosen date', functi
         ->get(route('venues.show', ['venue' => $session->court->venue, 'date' => $date->toDateString()]))
         ->assertOk()
         ->assertSee($session->court->venue->name)
-        ->assertSee($session->court->name)  // a court column
-        ->assertSee('9:00 AM')              // a time row
-        ->assertSee(                        // the slot is a clickable booking link
-            route('bookings.checkout', ['court' => $session->court, 'session' => $session, 'date' => $date->toDateString()]),
-            escape: false,
-        );
+        ->assertSee($session->court->name)  // a court row
+        ->assertSee('9:00 AM')              // a time column
+        ->assertSee('RM 40');               // a selectable slot
 });
 
 test('a booked slot shows as taken in the calendar grid', function () {
@@ -85,15 +102,67 @@ test('a booked slot shows as taken in the calendar grid', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('bookings.checkout', ['court' => $session->court, 'session' => $session, 'date' => $date->toDateString()]));
 
-    // Another customer now sees it as taken, not clickable.
+    // Another customer now sees it as taken, not selectable.
     $this->actingAs(User::factory()->create())
         ->get(route('venues.show', ['venue' => $session->court->venue, 'date' => $date->toDateString()]))
         ->assertOk()
         ->assertSee('Booked')
-        ->assertDontSee(
-            route('bookings.checkout', ['court' => $session->court, 'session' => $session, 'date' => $date->toDateString()]),
-            escape: false,
-        );
+        ->assertDontSee('RM 40'); // the only slot is taken → no selectable price
+});
+
+test('a customer can select multiple slots and pay for them in one go', function () {
+    config()->set('cashier.secret', null); // demo mode confirms
+    $date = Carbon::parse('2026-07-06');
+    [$venue, $courtA, $courtB, $sA, $sB] = liveTwoCourtVenue($date);
+    $customer = User::factory()->create();
+
+    Livewire::actingAs($customer)
+        ->test(VenueShow::class, ['venue' => $venue])
+        ->set('date', $date->toDateString())
+        ->call('toggleSlot', $courtA->id, $sA->id)
+        ->call('toggleSlot', $courtB->id, $sB->id)
+        ->assertCount('selected', 2)
+        ->call('checkout')
+        ->assertRedirect(route('bookings.mine'));
+
+    expect($customer->bookings()->count())->toBe(2)
+        ->and($customer->bookings()->where('status', BookingStatus::Confirmed->value)->count())->toBe(2)
+        ->and((float) $customer->bookings()->sum('price'))->toBe(90.0); // 40 + 50
+});
+
+test('selecting can be toggled off before booking', function () {
+    $date = Carbon::parse('2026-07-06');
+    [$venue, $courtA, , $sA] = liveTwoCourtVenue($date);
+    $customer = User::factory()->create();
+
+    Livewire::actingAs($customer)
+        ->test(VenueShow::class, ['venue' => $venue])
+        ->set('date', $date->toDateString())
+        ->call('toggleSlot', $courtA->id, $sA->id)
+        ->assertCount('selected', 1)
+        ->call('toggleSlot', $courtA->id, $sA->id) // tap again to deselect
+        ->assertCount('selected', 0);
+});
+
+test('booking multiple slots is all-or-nothing when one is taken', function () {
+    config()->set('cashier.secret', null);
+    $date = Carbon::parse('2026-07-06');
+    [$venue, $courtA, $courtB, $sA, $sB] = liveTwoCourtVenue($date);
+
+    // Someone else has already taken court A's slot.
+    app(BookingService::class)->reserve(User::factory()->create(), $sA, $date)
+        ->update(['status' => BookingStatus::Confirmed]);
+
+    $customer = User::factory()->create();
+    Livewire::actingAs($customer)
+        ->test(VenueShow::class, ['venue' => $venue])
+        ->set('date', $date->toDateString())
+        ->call('toggleSlot', $courtA->id, $sA->id)
+        ->call('toggleSlot', $courtB->id, $sB->id)
+        ->call('checkout'); // no redirect — the whole booking is rejected
+
+    // Neither slot was booked for this customer (all-or-nothing).
+    expect($customer->bookings()->count())->toBe(0);
 });
 
 test('a customer can book a session (demo mode confirms it)', function () {
