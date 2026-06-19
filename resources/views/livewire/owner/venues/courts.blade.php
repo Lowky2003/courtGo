@@ -77,8 +77,8 @@
             {{-- ── Step 3: build the slot schedule(s) ── --}}
             @if ($step === 3)
                 <flux:text class="text-sm text-zinc-500">
-                    For each row, choose a day range and a From–Until window, then a slot length — we split the window into
-                    back-to-back slots (shown in the preview) for every day in the range. Any time without a slot can't be booked.
+                    For each row, tick the days, choose a From–Until window and a slot length — we split the window into
+                    back-to-back slots (shown in the preview) for every day you tick. Any time without a slot can't be booked.
                 </flux:text>
 
                 @if ($scheduleMode === 'same')
@@ -86,14 +86,9 @@
                         <flux:text class="font-medium">Slots (applied to every court)</flux:text>
 
                         @foreach ($sessions as $i => $row)
-                            <div wire:key="session-{{ $i }}" class="space-y-2 rounded-lg border border-zinc-100 dark:border-zinc-800 p-3">
-                                <div class="grid grid-cols-2 gap-2 lg:grid-cols-7 lg:items-end">
-                                    <flux:select wire:model.live="sessions.{{ $i }}.from_day" label="From day">
-                                        @foreach ($days as $num => $label)<flux:select.option value="{{ $num }}">{{ $label }}</flux:select.option>@endforeach
-                                    </flux:select>
-                                    <flux:select wire:model.live="sessions.{{ $i }}.to_day" label="Until day">
-                                        @foreach ($days as $num => $label)<flux:select.option value="{{ $num }}">{{ $label }}</flux:select.option>@endforeach
-                                    </flux:select>
+                            <div wire:key="session-{{ $i }}" class="space-y-3 rounded-lg border border-zinc-100 dark:border-zinc-800 p-3">
+                                @include('partials.day-toggles', ['model' => "sessions.$i.days", 'weekdays' => $weekdays])
+                                <div class="grid grid-cols-2 gap-2 lg:grid-cols-5 lg:items-end">
                                     <flux:select wire:model.live="sessions.{{ $i }}.start_time" label="From">
                                         @foreach ($times as $value => $label)<flux:select.option value="{{ $value }}">{{ $label }}</flux:select.option>@endforeach
                                     </flux:select>
@@ -119,14 +114,9 @@
                                 <flux:heading size="sm">{{ $courtName }}</flux:heading>
 
                                 @foreach ($courtSessions[$c] ?? [] as $i => $row)
-                                    <div wire:key="court-{{ $c }}-session-{{ $i }}" class="space-y-2 rounded-lg border border-zinc-100 dark:border-zinc-800 p-3">
-                                        <div class="grid grid-cols-2 gap-2 lg:grid-cols-7 lg:items-end">
-                                            <flux:select wire:model.live="courtSessions.{{ $c }}.{{ $i }}.from_day" label="From day">
-                                                @foreach ($days as $num => $label)<flux:select.option value="{{ $num }}">{{ $label }}</flux:select.option>@endforeach
-                                            </flux:select>
-                                            <flux:select wire:model.live="courtSessions.{{ $c }}.{{ $i }}.to_day" label="Until day">
-                                                @foreach ($days as $num => $label)<flux:select.option value="{{ $num }}">{{ $label }}</flux:select.option>@endforeach
-                                            </flux:select>
+                                    <div wire:key="court-{{ $c }}-session-{{ $i }}" class="space-y-3 rounded-lg border border-zinc-100 dark:border-zinc-800 p-3">
+                                        @include('partials.day-toggles', ['model' => "courtSessions.$c.$i.days", 'weekdays' => $weekdays])
+                                        <div class="grid grid-cols-2 gap-2 lg:grid-cols-5 lg:items-end">
                                             <flux:select wire:model.live="courtSessions.{{ $c }}.{{ $i }}.start_time" label="From">
                                                 @foreach ($times as $value => $label)<flux:select.option value="{{ $value }}">{{ $label }}</flux:select.option>@endforeach
                                             </flux:select>

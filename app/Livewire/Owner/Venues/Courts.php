@@ -173,8 +173,8 @@ class Courts extends Component
 
     private function blankSession(): array
     {
-        // A time window split into slots, applied across a range of days (default Mon–Fri).
-        return ['from_day' => 1, 'to_day' => 5, 'start_time' => '20:00', 'end_time' => '22:00', 'hours' => 2, 'price' => 40];
+        // A time window split into slots, applied to the ticked days (default Mon–Fri).
+        return ['days' => [1, 2, 3, 4, 5], 'start_time' => '20:00', 'end_time' => '22:00', 'hours' => 2, 'price' => 40];
     }
 
     public function addSession(): void
@@ -203,20 +203,25 @@ class Courts extends Component
     {
         $this->validate($this->scheduleMode === 'same'
             ? [
-                'sessions.*.from_day' => 'required|integer|between:0,6',
-                'sessions.*.to_day' => 'required|integer|between:0,6',
+                'sessions.*.days' => 'required|array|min:1',
+                'sessions.*.days.*' => 'integer|between:0,6',
                 'sessions.*.start_time' => 'required|date_format:H:i',
                 'sessions.*.end_time' => 'required|date_format:H:i',
                 'sessions.*.hours' => 'required|numeric|min:0.5|max:24',
                 'sessions.*.price' => 'required|numeric|min:0',
             ]
             : [
-                'courtSessions.*.*.from_day' => 'required|integer|between:0,6',
-                'courtSessions.*.*.to_day' => 'required|integer|between:0,6',
+                'courtSessions.*.*.days' => 'required|array|min:1',
+                'courtSessions.*.*.days.*' => 'integer|between:0,6',
                 'courtSessions.*.*.start_time' => 'required|date_format:H:i',
                 'courtSessions.*.*.end_time' => 'required|date_format:H:i',
                 'courtSessions.*.*.hours' => 'required|numeric|min:0.5|max:24',
                 'courtSessions.*.*.price' => 'required|numeric|min:0',
+            ], [
+                'sessions.*.days.required' => 'Pick at least one day for each slot row.',
+                'sessions.*.days.min' => 'Pick at least one day for each slot row.',
+                'courtSessions.*.*.days.required' => 'Pick at least one day for each slot row.',
+                'courtSessions.*.*.days.min' => 'Pick at least one day for each slot row.',
             ]);
 
         $names = $this->generatedNames();
@@ -251,7 +256,7 @@ class Courts extends Component
                 foreach ($schedules[$i] as $row) {
                     $slots = $this->buildSlots($row['start_time'], $row['end_time'], (float) $row['hours']);
 
-                    foreach ($this->daysInRange($row) as $day) {
+                    foreach ($this->selectedDays($row) as $day) {
                         foreach ($slots as $slot) {
                             $court->sessionTemplates()->create([
                                 'day_of_week' => $day,
@@ -269,13 +274,15 @@ class Courts extends Component
         $this->cancelWizard();
     }
 
-    /** Weekdays (0=Sun … 6=Sat) covered by a row's day range, inclusive. */
-    private function daysInRange(array $row): array
+    /** The weekdays (0=Sun … 6=Sat) a row's slots apply to. */
+    private function selectedDays(array $row): array
     {
-        $from = (int) $row['from_day'];
-        $to = (int) $row['to_day'];
-
-        return range(min($from, $to), max($from, $to));
+        return collect($row['days'] ?? [])
+            ->map(fn ($d) => (int) $d)
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
     }
 
     /** End-after-start and no overlapping slots on any shared day within one court's schedule. */
@@ -303,7 +310,7 @@ class Courts extends Component
             }
 
             // None of the generated slots may overlap another on the same day.
-            foreach ($this->daysInRange($row) as $day) {
+            foreach ($this->selectedDays($row) as $day) {
                 foreach ($slots as $slot) {
                     $start = $this->slotMinutes($slot['start']);
                     $end = $this->slotMinutes($slot['end'], isEnd: true);
@@ -349,7 +356,7 @@ class Courts extends Component
     {
         return view('livewire.owner.venues.courts', [
             'courts' => $this->venue->courts()->latest()->get(),
-            'days' => self::DAYS,
+            'weekdays' => config('courtgo.weekdays'),
             'times' => $this->timeOptions(),
             'endTimes' => $this->endTimeOptions(),
             'previewNames' => $this->generatedNames(),

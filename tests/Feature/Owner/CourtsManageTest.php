@@ -22,8 +22,7 @@ test('the wizard creates numbered courts that share one schedule', function () {
         ->assertHasNoErrors()
         ->set('scheduleMode', 'same')
         ->call('toStep3')
-        ->set('sessions.0.from_day', 1) // Monday only
-        ->set('sessions.0.to_day', 1)
+        ->set('sessions.0.days', [1]) // Monday only
         ->set('sessions.0.start_time', '20:00')
         ->set('sessions.0.end_time', '22:00')
         ->set('sessions.0.price', 40)
@@ -49,8 +48,7 @@ test('the wizard accepts a slot that ends at midnight', function () {
         ->call('toStep2')
         ->set('scheduleMode', 'same')
         ->call('toStep3')
-        ->set('sessions.0.from_day', 5)
-        ->set('sessions.0.to_day', 5)
+        ->set('sessions.0.days', [5])
         ->set('sessions.0.start_time', '20:00')
         ->set('sessions.0.end_time', '00:00') // midnight
         ->set('sessions.0.hours', 2)          // 8pm–midnight ÷ 2h = two slots
@@ -73,8 +71,7 @@ test('the wizard splits each row into slots for every day in the range', functio
         ->call('toStep2')
         ->set('scheduleMode', 'same')
         ->call('toStep3')
-        ->set('sessions.0.from_day', 1) // Mon
-        ->set('sessions.0.to_day', 5)   // Fri → 5 days
+        ->set('sessions.0.days', [1, 2, 3, 4, 5]) // Mon–Fri
         ->set('sessions.0.start_time', '18:00')
         ->set('sessions.0.end_time', '22:00')
         ->set('sessions.0.hours', 2)    // 4-hour window ÷ 2h = 2 slots/day
@@ -102,8 +99,7 @@ test('the wizard supports 30-minute slots', function () {
         ->call('toStep2')
         ->set('scheduleMode', 'same')
         ->call('toStep3')
-        ->set('sessions.0.from_day', 1)
-        ->set('sessions.0.to_day', 1)
+        ->set('sessions.0.days', [1])
         ->set('sessions.0.start_time', '20:00')
         ->set('sessions.0.end_time', '21:00')
         ->set('sessions.0.hours', '0.5') // string, as the dropdown supplies
@@ -129,14 +125,62 @@ test('the wizard rejects overlapping slots from different rows on a shared day',
         ->set('scheduleMode', 'same')
         ->call('toStep3')
         ->call('addSession') // a second row
-        ->set('sessions.0.from_day', 1)->set('sessions.0.to_day', 3) // Mon–Wed
+        ->set('sessions.0.days', [1, 2, 3]) // Mon–Wed
         ->set('sessions.0.start_time', '18:00')->set('sessions.0.end_time', '20:00')
         ->set('sessions.0.hours', 2)->set('sessions.0.price', 40)
-        ->set('sessions.1.from_day', 2)->set('sessions.1.to_day', 4) // Tue–Thu
+        ->set('sessions.1.days', [2, 3, 4]) // Tue–Thu
         ->set('sessions.1.start_time', '19:00')->set('sessions.1.end_time', '21:00') // overlaps row 0 on Tue/Wed
         ->set('sessions.1.hours', 2)->set('sessions.1.price', 40)
         ->call('create')
         ->assertHasErrors();
+
+    expect($venue->courts()->count())->toBe(0);
+});
+
+test('the wizard creates slots only on the ticked days', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->for($owner, 'owner')->create();
+
+    Livewire::actingAs($owner)
+        ->test(Courts::class, ['venue' => $venue])
+        ->call('startWizard')
+        ->set('sport', 'Badminton')
+        ->set('count', 1)
+        ->call('toStep2')
+        ->set('scheduleMode', 'same')
+        ->call('toStep3')
+        ->set('sessions.0.days', [1, 3, 5]) // Mon, Wed, Fri — not a contiguous range
+        ->set('sessions.0.start_time', '20:00')
+        ->set('sessions.0.end_time', '22:00')
+        ->set('sessions.0.hours', 2)
+        ->set('sessions.0.price', 40)
+        ->call('create')
+        ->assertHasNoErrors();
+
+    $days = $venue->courts()->first()->sessionTemplates()->pluck('day_of_week')
+        ->map(fn ($d) => (int) $d)->sort()->values()->all();
+    expect($days)->toBe([1, 3, 5]);
+});
+
+test('the wizard requires at least one day per slot row', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->for($owner, 'owner')->create();
+
+    Livewire::actingAs($owner)
+        ->test(Courts::class, ['venue' => $venue])
+        ->call('startWizard')
+        ->set('sport', 'Badminton')
+        ->set('count', 1)
+        ->call('toStep2')
+        ->set('scheduleMode', 'same')
+        ->call('toStep3')
+        ->set('sessions.0.days', []) // no days ticked
+        ->set('sessions.0.start_time', '20:00')
+        ->set('sessions.0.end_time', '22:00')
+        ->set('sessions.0.hours', 2)
+        ->set('sessions.0.price', 40)
+        ->call('create')
+        ->assertHasErrors('sessions.0.days');
 
     expect($venue->courts()->count())->toBe(0);
 });
@@ -153,8 +197,7 @@ test('the wizard rejects a window that does not divide evenly into slots', funct
         ->call('toStep2')
         ->set('scheduleMode', 'same')
         ->call('toStep3')
-        ->set('sessions.0.from_day', 1)
-        ->set('sessions.0.to_day', 1)
+        ->set('sessions.0.days', [1])
         ->set('sessions.0.start_time', '20:00')
         ->set('sessions.0.end_time', '23:00') // 3 hours
         ->set('sessions.0.hours', 2)          // doesn't fit
@@ -202,8 +245,7 @@ test('a day range creates one slot per day', function () {
         ->call('toStep2')
         ->set('scheduleMode', 'same')
         ->call('toStep3')
-        ->set('sessions.0.from_day', 1) // Mon
-        ->set('sessions.0.to_day', 5)   // Fri → 5 days
+        ->set('sessions.0.days', [1, 2, 3, 4, 5]) // Mon–Fri
         ->set('sessions.0.start_time', '20:00')
         ->set('sessions.0.end_time', '22:00')
         ->set('sessions.0.price', 40)
@@ -228,14 +270,12 @@ test('the wizard creates lettered courts with different schedules', function () 
         ->assertHasNoErrors()
         ->set('scheduleMode', 'different')
         ->call('toStep3')
-        ->set('courtSessions.0.0.from_day', 1)
-        ->set('courtSessions.0.0.to_day', 1)
+        ->set('courtSessions.0.0.days', [1])
         ->set('courtSessions.0.0.start_time', '18:00')
         ->set('courtSessions.0.0.end_time', '19:00')
         ->set('courtSessions.0.0.hours', 1)
         ->set('courtSessions.0.0.price', 30)
-        ->set('courtSessions.1.0.from_day', 2)
-        ->set('courtSessions.1.0.to_day', 2)
+        ->set('courtSessions.1.0.days', [2])
         ->set('courtSessions.1.0.start_time', '09:00')
         ->set('courtSessions.1.0.end_time', '10:00')
         ->set('courtSessions.1.0.hours', 1)

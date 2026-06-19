@@ -155,7 +155,7 @@ class Schedule extends Component
                 ->get()
                 ->groupBy('day_of_week'),
             'blockedDates' => $this->court->blockedDates()->orderBy('date')->get(),
-            'days' => self::DAYS,
+            'days' => config('courtgo.weekdays'), // Monday-first display order
             'times' => $this->timeOptions(),
             'endTimes' => $this->endTimeOptions(),
             'preview' => $this->slotPreview($this->start_time, $this->end_time, $this->hours_per_slot),

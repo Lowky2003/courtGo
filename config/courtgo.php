@@ -61,6 +61,27 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Weekdays
+    |--------------------------------------------------------------------------
+    |
+    | Day-of-week options, keyed by Carbon's dayOfWeek (0=Sun … 6=Sat) but
+    | ordered Monday-first for display, since owners don't think of Sunday as
+    | "day 0". Owners tick the days a slot applies to.
+    |
+    */
+
+    'weekdays' => [
+        1 => 'Monday',
+        2 => 'Tuesday',
+        3 => 'Wednesday',
+        4 => 'Thursday',
+        5 => 'Friday',
+        6 => 'Saturday',
+        0 => 'Sunday',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Slot lengths
     |--------------------------------------------------------------------------
     |
