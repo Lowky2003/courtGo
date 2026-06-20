@@ -82,7 +82,9 @@ test('the confirmation email lists the venue, every slot and the total', functio
         ->and($body)->toContain($court->venue->name)
         ->and($body)->toContain($court->name)
         ->and($body)->toContain('Total paid: RM 80.00')
-        ->and($mail->actionUrl)->toBe(route('bookings.mine'));
+        ->and($body)->toContain('https://www.google.com/maps/search/') // location map link
+        ->and($mail->actionText)->toBe('View my booking')
+        ->and($mail->actionUrl)->toBe(route('bookings.show', $b1)); // detail page, not the list
 });
 
 test('a webhook retry does not email the customer twice', function () {

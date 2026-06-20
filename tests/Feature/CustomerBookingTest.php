@@ -406,7 +406,8 @@ test('a customer can open a booking and see its details', function () {
         ->assertSee($court->name)
         ->assertSee('10:00 AM')
         ->assertSee('11:00 AM')   // merged end of the block
-        ->assertSee('RM 16.00');  // total of the two slots
+        ->assertSee('RM 16.00')   // total of the two slots
+        ->assertSee('https://www.google.com/maps/search/', escape: false); // clickable location map link
 });
 
 test('a customer cannot open another customer booking', function () {

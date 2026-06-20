@@ -39,7 +39,7 @@
             </div>
             <div class="sm:col-span-2">
                 <div class="text-zinc-500">Location</div>
-                <div class="font-medium">📍 {{ $venue->address }}, {{ $venue->city }}, {{ $venue->state }}</div>
+                <div class="font-medium"><x-venue-map-link :venue="$venue" /></div>
             </div>
             <div>
                 <div class="text-zinc-500">Total paid</div>

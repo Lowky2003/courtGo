@@ -2,7 +2,8 @@
     <div class="space-y-1">
         <flux:button size="sm" variant="ghost" :href="route('courts.browse')" wire:navigate icon="arrow-left">Back to search</flux:button>
         <flux:heading size="xl">{{ $court->venue->name }}</flux:heading>
-        <flux:text>{{ $court->name }} · {{ $court->sport }} · 📍 {{ $court->venue->city }}, {{ $court->venue->state }}</flux:text>
+        <flux:text>{{ $court->name }} · {{ $court->sport }}</flux:text>
+        <x-venue-map-link :venue="$court->venue" class="text-sm" />
         @if ($court->venue->description)
             <flux:text class="text-zinc-500">{{ $court->venue->description }}</flux:text>
         @endif

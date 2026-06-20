@@ -62,9 +62,13 @@ class BookingConfirmed extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $venue = $this->bookings->first()->court->venue;
-        $date = $this->bookings->first()->booking_date->format('l, d M Y');
+        $first = $this->bookings->first();
+        $venue = $first->court->venue;
+        $date = $first->booking_date->format('l, d M Y');
         $total = (float) $this->bookings->sum('price');
+
+        $address = trim(implode(', ', array_filter([$venue->address, $venue->city, $venue->state])));
+        $mapUrl = 'https://www.google.com/maps/search/?api=1&query='.urlencode($address);
 
         $mail = (new MailMessage)
             ->subject('Your CourtGo booking is confirmed')
@@ -83,7 +87,8 @@ class BookingConfirmed extends Notification
 
         return $mail
             ->line('Total paid: RM '.number_format($total, 2))
-            ->action('View my bookings', route('bookings.mine'))
+            ->line('Location: ['.$address.']('.$mapUrl.')') // markdown link → opens in Google Maps
+            ->action('View my booking', route('bookings.show', $first))
             ->line('Thanks for booking with CourtGo!');
     }
 }

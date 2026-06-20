@@ -7,7 +7,7 @@
         @endif
 
         <flux:heading size="xl">{{ $venue->name }}</flux:heading>
-        <flux:text>📍 {{ $venue->address }}, {{ $venue->city }}, {{ $venue->state }}</flux:text>
+        <x-venue-map-link :venue="$venue" class="text-sm" />
         @if ($venue->description)
             <flux:text class="text-zinc-500">{{ $venue->description }}</flux:text>
         @endif
