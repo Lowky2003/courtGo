@@ -2,6 +2,7 @@
 
 use App\Enums\BookingStatus;
 use App\Enums\UserRole;
+use App\Livewire\MyBookings;
 use App\Livewire\VenueShow;
 use App\Models\Booking;
 use App\Models\Court;
@@ -271,6 +272,52 @@ test('booking the same slot twice is rejected', function () {
         ->assertSessionHas('booking_error');
 
     expect(Booking::where('court_id', $session->court_id)->count())->toBe(1);
+});
+
+test('consecutive slots on the same court are grouped into one row in my bookings', function () {
+    $customer = User::factory()->create();
+    $court = Court::factory()->create();
+    $date = Carbon::parse('2026-07-06')->toDateString();
+
+    // Three back-to-back 30-minute slots, plus one separate slot — all confirmed.
+    foreach ([['10:00:00', '10:30:00'], ['10:30:00', '11:00:00'], ['11:00:00', '11:30:00']] as [$start, $end]) {
+        Booking::factory()->for($court)->create([
+            'customer_id' => $customer->id, 'booking_date' => $date,
+            'start_time' => $start, 'end_time' => $end, 'price' => 8,
+        ]);
+    }
+    Booking::factory()->for($court)->create([
+        'customer_id' => $customer->id, 'booking_date' => $date,
+        'start_time' => '14:00:00', 'end_time' => '14:30:00', 'price' => 8,
+    ]);
+
+    $groups = Livewire::actingAs($customer)->test(MyBookings::class)->viewData('groups');
+
+    expect($groups)->toHaveCount(2); // the three back-to-back slots merge into one
+
+    $merged = collect($groups)->firstWhere('count', 3);
+    expect($merged)->not->toBeNull()
+        ->and(substr((string) $merged['start_time'], 0, 5))->toBe('10:00')
+        ->and(substr((string) $merged['end_time'], 0, 5))->toBe('11:30')
+        ->and($merged['price'])->toBe(24.0); // 3 × RM 8
+});
+
+test('continue payment on a grouped row pays for all its held slots', function () {
+    config()->set('cashier.secret', null); // demo confirms
+    $customer = User::factory()->create();
+    $court = Court::factory()->create();
+    $date = Carbon::parse('2026-07-06')->toDateString();
+
+    $b1 = Booking::factory()->pending()->for($court)->create(['customer_id' => $customer->id, 'booking_date' => $date, 'start_time' => '10:00:00', 'end_time' => '10:30:00', 'price' => 8]);
+    $b2 = Booking::factory()->pending()->for($court)->create(['customer_id' => $customer->id, 'booking_date' => $date, 'start_time' => '10:30:00', 'end_time' => '11:00:00', 'price' => 8]);
+
+    Livewire::actingAs($customer)
+        ->test(MyBookings::class)
+        ->call('payGroup', [$b1->id, $b2->id])
+        ->assertRedirect(route('bookings.mine'));
+
+    expect($b1->fresh()->status)->toBe(BookingStatus::Confirmed)
+        ->and($b2->fresh()->status)->toBe(BookingStatus::Confirmed);
 });
 
 test('a customer can resume payment for a pending booking', function () {

@@ -22,37 +22,39 @@
         </flux:callout>
     @endif
 
-    @if ($bookings->isEmpty())
+    @if (empty($groups))
         <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-8 text-center space-y-3">
             <flux:text>No bookings here.</flux:text>
             <flux:button variant="primary" :href="route('courts.browse')" wire:navigate>Find a court</flux:button>
         </div>
     @else
         <div class="space-y-3">
-            @foreach ($bookings as $booking)
-                <div class="flex items-center justify-between gap-4 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4" wire:key="booking-{{ $booking->id }}">
+            @foreach ($groups as $group)
+                <div class="flex items-center justify-between gap-4 rounded-xl border border-zinc-200 dark:border-zinc-700 p-4" wire:key="group-{{ $group['ids'][0] }}">
                     <div>
-                        <div class="font-medium">{{ $booking->court->venue->name }} — {{ $booking->court->name }}</div>
+                        <div class="font-medium">{{ $group['court']->venue->name }} — {{ $group['court']->name }}</div>
                         <div class="text-sm text-zinc-500">
-                            {{ $booking->booking_date->format('D, d M Y') }} ·
-                            {{ \Illuminate\Support\Carbon::parse($booking->start_time)->format('g:i A') }}–{{ \Illuminate\Support\Carbon::parse($booking->end_time)->format('g:i A') }}
+                            {{ $group['date']->format('D, d M Y') }} ·
+                            {{ \Illuminate\Support\Carbon::parse($group['start_time'])->format('g:i A') }}–{{ \Illuminate\Support\Carbon::parse($group['end_time'])->format('g:i A') }}
                         </div>
-                        <div class="text-sm text-zinc-500">RM {{ number_format($booking->price, 2) }}</div>
-                        @if ($booking->awaitingPayment())
+                        <div class="text-sm text-zinc-500">
+                            RM {{ number_format($group['price'], 2) }}@if ($group['count'] > 1) <span class="text-zinc-400">· {{ $group['count'] }} slots</span>@endif
+                        </div>
+                        @if ($group['status'] === 'awaiting' && $group['hold_expires_at'])
                             <div class="text-xs text-amber-600 mt-1">
-                                Pay before {{ $booking->hold_expires_at->format('g:i A') }} or the slot is released.
+                                Pay before {{ $group['hold_expires_at']->format('g:i A') }} or the slot is released.
                             </div>
                         @endif
                     </div>
                     <div class="flex flex-col items-end gap-2">
-                        @if ($booking->status === \App\Enums\BookingStatus::Confirmed)
+                        @if ($group['status'] === 'confirmed')
                             <flux:badge color="green">Confirmed</flux:badge>
-                        @elseif ($booking->awaitingPayment())
+                        @elseif ($group['status'] === 'awaiting')
                             <flux:badge color="amber">Awaiting payment</flux:badge>
-                            <flux:button size="sm" variant="primary" href="{{ route('bookings.pay', $booking) }}">
+                            <flux:button size="sm" variant="primary" wire:click="payGroup({{ json_encode($group['ids']) }})" wire:loading.attr="disabled">
                                 Continue payment
                             </flux:button>
-                        @elseif ($booking->holdExpired() || $booking->status === \App\Enums\BookingStatus::Expired)
+                        @elseif ($group['status'] === 'expired')
                             <flux:badge color="zinc">Expired</flux:badge>
                         @else
                             <flux:badge color="zinc">Cancelled</flux:badge>
