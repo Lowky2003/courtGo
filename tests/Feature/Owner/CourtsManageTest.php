@@ -464,3 +464,15 @@ test('the courts page renders for the venue owner', function () {
         ->assertOk()
         ->assertSeeLivewire(Courts::class);
 });
+
+test('an unapproved owner cannot add courts until approved', function () {
+    $owner = User::factory()->pending()->create(['role' => UserRole::Owner]); // approved_at null
+    $venue = Venue::factory()->for($owner, 'owner')->create();
+
+    Livewire::actingAs($owner)
+        ->test(Courts::class, ['venue' => $venue])
+        ->assertSee('Pending admin approval')
+        ->assertDontSeeHtml('wire:click="startWizard"') // the "Add courts" button is hidden
+        ->call('startWizard')
+        ->assertForbidden();                            // and the action is blocked anyway
+});

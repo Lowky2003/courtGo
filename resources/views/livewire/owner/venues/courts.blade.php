@@ -7,7 +7,14 @@
         <flux:text>{{ $venue->city }}, {{ $venue->state }}</flux:text>
     </div>
 
-    @if (! $showWizard)
+    @if (! $this->canAddCourts())
+        <flux:callout variant="warning" icon="clock">
+            <flux:callout.heading>Pending admin approval</flux:callout.heading>
+            <flux:callout.text>
+                We review new venues before they go live. You'll be able to add courts once an admin approves your account.
+            </flux:callout.text>
+        </flux:callout>
+    @elseif (! $showWizard)
         <flux:button variant="primary" icon="plus" wire:click="startWizard">Add courts</flux:button>
     @else
         {{-- ───────────────────────── Add-courts wizard ───────────────────────── --}}

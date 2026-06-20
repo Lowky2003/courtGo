@@ -55,8 +55,16 @@ class Courts extends Component
 
     // ---------------------------------------------------------------- wizard
 
+    /** Owners can only add courts once an admin has approved their account. */
+    public function canAddCourts(): bool
+    {
+        return $this->venue->owner->isApproved();
+    }
+
     public function startWizard(): void
     {
+        abort_unless($this->canAddCourts(), 403);
+
         $this->resetWizard();
         $this->showWizard = true;
     }
@@ -201,6 +209,8 @@ class Courts extends Component
 
     public function create(): void
     {
+        abort_unless($this->canAddCourts(), 403);
+
         $this->validate($this->scheduleMode === 'same'
             ? [
                 'sessions.*.days' => 'required|array|min:1',
