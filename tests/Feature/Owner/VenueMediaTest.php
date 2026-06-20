@@ -53,6 +53,32 @@ test('the gallery is capped at 12 photos', function () {
     expect($venue->photos()->count())->toBe(12);
 });
 
+test('an owner can upload a cover photo that returns to the page', function () {
+    Storage::fake('public');
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->for($owner, 'owner')->create();
+
+    $this->actingAs($owner)
+        ->post(route('owner.venues.media.cover', $venue), [
+            'photo' => UploadedFile::fake()->image('cover.jpg'),
+        ])
+        ->assertRedirect();
+
+    expect($venue->fresh()->image_path)->not->toBeNull();
+    Storage::disk('public')->assertExists($venue->fresh()->image_path);
+});
+
+test('a non-raster (svg) upload is rejected', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->for($owner, 'owner')->create();
+
+    $this->actingAs($owner)
+        ->post(route('owner.venues.media.photos.store', $venue), [
+            'photo' => UploadedFile::fake()->create('logo.svg', 10, 'image/svg+xml'),
+        ])
+        ->assertSessionHasErrors('photo');
+});
+
 test('an owner cannot add a photo to another owners venue', function () {
     $owner = User::factory()->create(['role' => UserRole::Owner]);
     $venue = Venue::factory()->create(); // someone else's venue

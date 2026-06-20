@@ -51,6 +51,7 @@ Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->grou
     Route::get('/venues/{venue}/photo', [\App\Http\Controllers\Owner\VenuePhotoController::class, 'edit'])->name('venues.photo.edit');
     Route::post('/venues/{venue}/photo', [\App\Http\Controllers\Owner\VenuePhotoController::class, 'update'])->name('venues.photo.update');
     Route::get('/venues/{venue}/profile', \App\Livewire\Owner\Venues\Profile::class)->name('venues.profile');
+    Route::post('/venues/{venue}/media/cover', [\App\Http\Controllers\Owner\VenueMediaController::class, 'storeCover'])->name('venues.media.cover');
     Route::post('/venues/{venue}/media/photos', [\App\Http\Controllers\Owner\VenueMediaController::class, 'storePhoto'])->name('venues.media.photos.store');
     Route::delete('/venues/{venue}/media/photos/{photo}', [\App\Http\Controllers\Owner\VenueMediaController::class, 'destroyPhoto'])->name('venues.media.photos.destroy');
     Route::get('/venues/{venue}', \App\Livewire\Owner\Venues\Courts::class)->name('venues.courts');

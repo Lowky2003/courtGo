@@ -13,28 +13,26 @@
         </flux:callout>
     @endif
 
-    {{-- Amenities (Livewire) --}}
+    {{-- Amenities (Livewire — saves automatically when toggled) --}}
     <div class="space-y-3 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
         <flux:heading size="lg">Amenities</flux:heading>
-        <flux:text class="text-sm text-zinc-500">Tick everything your venue offers.</flux:text>
+        <flux:text class="text-sm text-zinc-500">Tick everything your venue offers — changes save automatically.</flux:text>
 
         <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
             @foreach ($allAmenities as $key => $meta)
-                <flux:checkbox wire:model="amenities" value="{{ $key }}" label="{{ $meta['label'] }}" />
+                <flux:checkbox wire:model.live="amenities" value="{{ $key }}" label="{{ $meta['label'] }}" />
             @endforeach
         </div>
         @error('amenities.*') <flux:text class="text-sm text-red-600">{{ $message }}</flux:text> @enderror
-
-        <flux:button variant="primary" wire:click="save">Save amenities</flux:button>
     </div>
 
-    {{-- Cover photo (plain HTTP form → existing controller) --}}
+    {{-- Cover photo (plain HTTP form → media controller, returns here) --}}
     <div class="space-y-3 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
         <flux:heading size="lg">Cover photo</flux:heading>
         @if ($venue->imageUrl())
             <img src="{{ $venue->imageUrl() }}" alt="" class="h-40 w-full rounded-lg object-cover" />
         @endif
-        <form method="POST" action="{{ route('owner.venues.photo.update', $venue) }}" enctype="multipart/form-data" class="flex items-center gap-3">
+        <form method="POST" action="{{ route('owner.venues.media.cover', $venue) }}" enctype="multipart/form-data" class="flex items-center gap-3">
             @csrf
             <input type="file" name="photo" accept="image/*" required class="text-sm" />
             <flux:button type="submit" variant="primary" size="sm">Upload cover</flux:button>

@@ -28,9 +28,10 @@
             @endif
 
             {{-- Amenities --}}
-            @if (! empty($venue->amenityLabels()))
+            @php($amenityList = $venue->amenityLabels())
+            @if (! empty($amenityList))
                 <div class="flex flex-wrap gap-2">
-                    @foreach ($venue->amenityLabels() as $amenity)
+                    @foreach ($amenityList as $amenity)
                         <span class="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
                             <flux:icon :name="$amenity['icon']" class="size-3.5" />
                             {{ $amenity['label'] }}

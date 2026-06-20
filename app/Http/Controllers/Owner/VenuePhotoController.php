@@ -31,7 +31,8 @@ class VenuePhotoController extends Controller
         $this->authorize('update', $venue);
 
         $request->validate([
-            'photo' => 'required|image|max:20480',
+            // Raster image only (no SVG → no stored-XSS), with size + pixel caps.
+            'photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:20480', 'dimensions:max_width=5000,max_height=5000'],
         ]);
 
         if ($venue->image_path) {

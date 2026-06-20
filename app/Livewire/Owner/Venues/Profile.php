@@ -28,8 +28,16 @@ class Profile extends Component
         $this->amenities = $venue->amenities ?? [];
     }
 
+    /** Autosave when a checkbox is toggled, so no ticks are lost if a photo form reloads the page. */
+    public function updatedAmenities(): void
+    {
+        $this->save();
+    }
+
     public function save(): void
     {
+        $this->authorize('update', $this->venue);
+
         $validated = $this->validate([
             'amenities' => 'array',
             'amenities.*' => ['string', Rule::in(array_keys(config('courtgo.amenities')))],
@@ -37,7 +45,7 @@ class Profile extends Component
 
         $this->venue->update(['amenities' => $validated['amenities']]);
 
-        session()->flash('status', 'Venue profile updated.');
+        session()->flash('status', 'Amenities saved.');
     }
 
     public function render()
