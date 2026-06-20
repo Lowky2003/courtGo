@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\BookingStatus;
 use App\Models\Booking;
+use App\Notifications\BookingConfirmed;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Laravel\Cashier\Cashier;
@@ -40,9 +41,17 @@ class BookingWebhookController extends Controller
             if (($session['payment_status'] ?? 'unpaid') === 'unpaid') {
                 return response('Awaiting payment', 200); // async not settled yet
             }
+
+            // Confirm each slot; collect only the ones newly confirmed in THIS call so
+            // a Stripe retry (which finds them already confirmed) doesn't re-email.
+            $confirmed = [];
             foreach ($bookingIds as $id) {
-                $this->confirm($id, $session);
+                if ($booking = $this->confirm($id, $session)) {
+                    $confirmed[] = $booking;
+                }
             }
+
+            BookingConfirmed::dispatchFor(collect($confirmed));
         } elseif (in_array($type, ['checkout.session.async_payment_failed', 'checkout.session.expired'], true)) {
             foreach ($bookingIds as $id) {
                 $this->release($id);
@@ -52,13 +61,17 @@ class BookingWebhookController extends Controller
         return response('Webhook handled', 200);
     }
 
-    /** Confirm the booking (idempotent — safe to call more than once). */
-    private function confirm(int $bookingId, array $session): void
+    /**
+     * Confirm the booking (idempotent — safe to call more than once).
+     * Returns the booking only when this call newly confirmed it (so the caller
+     * knows whether to email); returns null if already confirmed or refunded.
+     */
+    private function confirm(int $bookingId, array $session): ?Booking
     {
         $booking = Booking::query()->whereKey($bookingId)->first();
 
         if (! $booking || $booking->status === BookingStatus::Confirmed) {
-            return;
+            return null;
         }
 
         // Edge case: the customer paid right as their hold expired, and another
@@ -84,7 +97,7 @@ class BookingWebhookController extends Controller
                 'processed_at' => now(),
             ]);
 
-            return;
+            return null;
         }
 
         // Slot is free → confirm (re-activating it even if the sweep had expired the hold).
@@ -95,6 +108,8 @@ class BookingWebhookController extends Controller
             'stripe_payment_intent_id' => $session['payment_intent'] ?? null,
             'processed_at' => now(),
         ]);
+
+        return $booking;
     }
 
     /** Refund a payment for a booking we can't honour (slot was taken). */

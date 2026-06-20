@@ -73,6 +73,30 @@ test('the browse page uses the sidebar-free customer layout', function () {
         ->assertDontSee('Platform');     // the owner/admin sidebar heading is absent
 });
 
+test('every venue link carries the searched sport (and none when no sport filter)', function () {
+    $date = Carbon::today()->addDays(8);
+    $a = browseLiveVenue($date);
+    $a->update(['name' => 'Alpha Arena']);
+    $b = browseLiveVenue($date);
+    $b->update(['name' => 'Beta Arena']); // 2nd card — where the variable-shadowing bug used to leak
+
+    // No sport filter → no ?sport on ANY card.
+    $this->actingAs(User::factory()->create())
+        ->get(route('courts.browse', ['date' => $date->toDateString()]))
+        ->assertOk()
+        ->assertSee(route('venues.show', ['venue' => $a]), escape: false)
+        ->assertSee(route('venues.show', ['venue' => $b]), escape: false)
+        ->assertDontSee(route('venues.show', ['venue' => $a, 'sport' => 'Badminton']), escape: false)
+        ->assertDontSee(route('venues.show', ['venue' => $b, 'sport' => 'Badminton']), escape: false);
+
+    // With a sport filter → every card's link carries ?sport=Badminton.
+    $this->actingAs(User::factory()->create())
+        ->get(route('courts.browse', ['date' => $date->toDateString(), 'sport' => 'Badminton']))
+        ->assertOk()
+        ->assertSee(route('venues.show', ['venue' => $a, 'sport' => 'Badminton']), escape: false)
+        ->assertSee(route('venues.show', ['venue' => $b, 'sport' => 'Badminton']), escape: false);
+});
+
 test('a pending venue is hidden from browse even with a live owner', function () {
     $date = Carbon::today()->addDays(8);
     $venue = browseLiveVenue($date);

@@ -3,6 +3,7 @@
 namespace App\Concerns;
 
 use App\Enums\BookingStatus;
+use App\Notifications\BookingConfirmed;
 use App\Services\BookingPaymentService;
 
 trait PaysBookingGroups
@@ -33,6 +34,8 @@ trait PaysBookingGroups
         foreach ($bookings as $booking) {
             $booking->update(['status' => BookingStatus::Confirmed, 'payment_status' => 'paid', 'processed_at' => now()]);
         }
+
+        BookingConfirmed::dispatchFor($bookings);
 
         return redirect()->route('bookings.mine')->with('booking_confirmed', true);
     }

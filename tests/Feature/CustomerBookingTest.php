@@ -23,8 +23,9 @@ function liveTwoCourtVenue(Carbon $date): array
         'stripe_price' => 'price_test', 'quantity' => 1,
     ]);
     $venue = Venue::factory()->for($owner, 'owner')->create();
-    $courtA = Court::factory()->for($venue)->create(['is_active' => true, 'name' => 'Court A']);
-    $courtB = Court::factory()->for($venue)->create(['is_active' => true, 'name' => 'Court B']);
+    // Same sport so both courts share one grid (the venue page shows one sport at a time).
+    $courtA = Court::factory()->for($venue)->create(['is_active' => true, 'name' => 'Court A', 'sport' => 'Badminton']);
+    $courtB = Court::factory()->for($venue)->create(['is_active' => true, 'name' => 'Court B', 'sport' => 'Badminton']);
     $sA = SessionTemplate::factory()->for($courtA)->create(['day_of_week' => $date->dayOfWeek, 'start_time' => '09:00', 'end_time' => '11:00', 'price' => 40]);
     $sB = SessionTemplate::factory()->for($courtB)->create(['day_of_week' => $date->dayOfWeek, 'start_time' => '09:00', 'end_time' => '11:00', 'price' => 50]);
 
@@ -181,8 +182,8 @@ test('booking slots on one court leaves the other courts available in the grid',
         'stripe_price' => 'price_test', 'quantity' => 1,
     ]);
     $venue = Venue::factory()->for($owner, 'owner')->create();
-    $courtA = Court::factory()->for($venue)->create(['is_active' => true, 'name' => 'Court A']);
-    $courtB = Court::factory()->for($venue)->create(['is_active' => true, 'name' => 'Court B']);
+    $courtA = Court::factory()->for($venue)->create(['is_active' => true, 'name' => 'Court A', 'sport' => 'Badminton']);
+    $courtB = Court::factory()->for($venue)->create(['is_active' => true, 'name' => 'Court B', 'sport' => 'Badminton']);
     foreach ([$courtA, $courtB] as $court) {
         SessionTemplate::factory()->for($court)->create(['day_of_week' => $date->dayOfWeek, 'start_time' => '10:00', 'end_time' => '10:30', 'price' => 8]);
         SessionTemplate::factory()->for($court)->create(['day_of_week' => $date->dayOfWeek, 'start_time' => '10:30', 'end_time' => '11:00', 'price' => 8]);

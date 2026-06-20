@@ -28,7 +28,7 @@
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @foreach ($venues as $venue)
                 @php($summary = $summaries[$venue->id])
-                <a href="{{ route('venues.show', ['venue' => $venue]) }}"
+                <a href="{{ route('venues.show', $sport !== '' ? ['venue' => $venue, 'sport' => $sport] : ['venue' => $venue]) }}"
                    wire:navigate wire:key="venue-{{ $venue->id }}"
                    class="flex flex-col overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700 hover:border-blue-400 transition">
                     @if ($venue->imageUrl())
@@ -44,8 +44,8 @@
                         <div class="text-sm text-zinc-500">📍 {{ $venue->city }}, {{ $venue->state }}</div>
 
                         <div class="mt-3 flex flex-wrap gap-1">
-                            @foreach ($venue->courts->pluck('sport')->unique() as $sport)
-                                <flux:badge size="sm" color="blue">{{ $sport }}</flux:badge>
+                            @foreach ($venue->courts->pluck('sport')->unique() as $courtSport)
+                                <flux:badge size="sm" color="blue">{{ $courtSport }}</flux:badge>
                             @endforeach
                         </div>
 

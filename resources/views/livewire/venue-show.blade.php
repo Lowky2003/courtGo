@@ -20,6 +20,20 @@
     @endif
 
     <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-5 space-y-5">
+        {{-- Sport picker — only when this venue offers more than one sport. --}}
+        @if (count($sports) > 1)
+            <div>
+                <flux:text class="text-sm font-medium">Sport</flux:text>
+                <div class="mt-2 flex flex-wrap gap-2">
+                    @foreach ($sports as $s)
+                        <flux:button size="sm" :variant="$s === $sport ? 'primary' : 'ghost'" wire:click="selectSport('{{ $s }}')">
+                            {{ $s }}
+                        </flux:button>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         {{-- Step 1: pick a date --}}
         <flux:input type="date" wire:model.live="date" label="1. Choose a date" :min="now()->toDateString()" />
 

@@ -7,6 +7,7 @@ use App\Exceptions\SlotUnavailableException;
 use App\Models\Booking;
 use App\Models\Court;
 use App\Models\SessionTemplate;
+use App\Notifications\BookingConfirmed;
 use App\Services\BookingPaymentService;
 use App\Services\BookingService;
 use Illuminate\Http\Request;
@@ -53,6 +54,8 @@ class BookingController extends Controller
             'processed_at' => now(),
         ]);
 
+        BookingConfirmed::dispatchFor(collect([$booking]));
+
         return redirect()->route('bookings.success', $booking)->with('demo_paid', true);
     }
 
@@ -84,6 +87,8 @@ class BookingController extends Controller
             'payment_status' => 'paid',
             'processed_at' => now(),
         ]);
+
+        BookingConfirmed::dispatchFor(collect([$booking]));
 
         return redirect()->route('bookings.success', $booking)->with('demo_paid', true);
     }

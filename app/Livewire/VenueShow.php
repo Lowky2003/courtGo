@@ -6,6 +6,7 @@ use App\Enums\BookingStatus;
 use App\Exceptions\SlotUnavailableException;
 use App\Models\SessionTemplate;
 use App\Models\Venue;
+use App\Notifications\BookingConfirmed;
 use App\Services\AvailabilityService;
 use App\Services\BookingPaymentService;
 use App\Services\BookingService;
@@ -25,6 +26,10 @@ class VenueShow extends Component
     #[Url]
     public string $date = '';
 
+    /** Which sport's courts to show (a venue can offer more than one). */
+    #[Url]
+    public string $sport = '';
+
     /** Selected slot keys, "courtId-sessionId". */
     public array $selected = [];
 
@@ -32,12 +37,39 @@ class VenueShow extends Component
     {
         $this->venue = $venue;
         // No default date — the customer chooses one first, then the calendar shows.
+
+        // Default to the sport the customer searched for (passed in the URL) when
+        // it's one this venue offers; otherwise the venue's first sport.
+        $sports = $this->venueSports();
+        if (! in_array($this->sport, $sports, true)) {
+            $this->sport = $sports[0] ?? '';
+        }
     }
 
     /** Changing the date clears the selection — the slots differ. */
     public function updatedDate(): void
     {
         $this->selected = [];
+    }
+
+    /** Changing the sport (incl. via the URL/back button) clears the selection. */
+    public function updatedSport(): void
+    {
+        $this->selected = [];
+    }
+
+    /** Switch which sport's courts are shown; the selection no longer applies. */
+    public function selectSport(string $sport): void
+    {
+        $this->sport = $sport;
+        $this->selected = [];
+    }
+
+    /** Distinct sports offered by this venue's bookable courts, sorted. */
+    private function venueSports(): array
+    {
+        return $this->venue->courts()->bookable()
+            ->select('sport')->distinct()->orderBy('sport')->pluck('sport')->all();
     }
 
     public function toggleSlot(int $courtId, int $sessionId): void
@@ -82,6 +114,8 @@ class VenueShow extends Component
             $booking->update(['status' => BookingStatus::Confirmed, 'payment_status' => 'paid', 'processed_at' => now()]);
         }
 
+        BookingConfirmed::dispatchFor(collect($created));
+
         return redirect()->route('bookings.mine')->with('booking_confirmed', true);
     }
 
@@ -92,17 +126,20 @@ class VenueShow extends Component
 
         return SessionTemplate::query()
             ->whereIn('id', $sessionIds)
-            ->whereHas('court', fn ($q) => $q->where('venue_id', $this->venue->id))
+            ->whereHas('court', fn ($q) => $q->where('venue_id', $this->venue->id)->where('sport', $this->sport))
             ->with('court')
             ->get();
     }
 
     public function render()
     {
+        $sports = $this->venueSports();
+
         // No date chosen yet → no calendar (the view shows a "choose a date" prompt).
         if ($this->date === '') {
             return view('livewire.venue-show', [
                 'courts' => collect(),
+                'sports' => $sports,
                 'timeColumns' => [],
                 'grid' => [],
                 'selectedSummary' => collect(),
@@ -118,7 +155,10 @@ class VenueShow extends Component
         $isToday = $date->isToday();
         $now = Carbon::now()->format('H:i:s');
 
-        $courts = $this->venue->courts()->bookable()->orderBy('name')->get();
+        // Only the chosen sport's courts — a venue can mix sports (e.g. badminton + futsal).
+        $courts = $this->venue->courts()->bookable()
+            ->where('sport', $this->sport)
+            ->orderBy('name')->get();
 
         // Build a calendar grid: columns = time slots, rows = courts. Each cell is
         // bookable (available) or shown as taken, so customers click a free slot.
@@ -166,6 +206,7 @@ class VenueShow extends Component
 
         return view('livewire.venue-show', [
             'courts' => $courts,
+            'sports' => $sports,
             'timeColumns' => $timeColumns,
             'grid' => $grid,
             'selectedSummary' => $selectedSessions->map(fn ($s) => [
