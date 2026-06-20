@@ -25,9 +25,15 @@ class CourtShow extends Component
 
     public function render()
     {
-        $sessions = app(AvailabilityService::class)
-            ->availableSessions($this->court, Carbon::parse($this->date));
+        $bookable = $this->court->isBookable();
 
-        return view('livewire.court-show', ['sessions' => $sessions]);
+        // Don't surface bookable slots for a court that isn't live (e.g. its venue
+        // is still pending admin approval) — the reserve path rejects them anyway,
+        // so showing clickable "Book & pay" buttons would only mislead the customer.
+        $sessions = $bookable
+            ? app(AvailabilityService::class)->availableSessions($this->court, Carbon::parse($this->date))
+            : collect();
+
+        return view('livewire.court-show', ['sessions' => $sessions, 'bookable' => $bookable]);
     }
 }

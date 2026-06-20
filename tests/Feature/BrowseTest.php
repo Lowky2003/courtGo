@@ -73,6 +73,17 @@ test('the browse page uses the sidebar-free customer layout', function () {
         ->assertDontSee('Platform');     // the owner/admin sidebar heading is absent
 });
 
+test('a pending venue is hidden from browse even with a live owner', function () {
+    $date = Carbon::today()->addDays(8);
+    $venue = browseLiveVenue($date);
+    $venue->update(['approved_at' => null]); // venue still awaiting admin approval
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('courts.browse', ['date' => $date->toDateString()]))
+        ->assertOk()
+        ->assertDontSee('Smash Arena');
+});
+
 test('a date with no matching session shows fully booked', function () {
     $date = Carbon::today()->addDays(8);
     browseLiveVenue($date); // session is on $date's weekday only

@@ -21,7 +21,15 @@ class Venue extends Model
         'city',
         'state',
         'image_path',
+        'approved_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'approved_at' => 'datetime',
+        ];
+    }
 
     /**
      * Clean up the uploaded image when a venue is deleted.
@@ -62,10 +70,28 @@ class Venue extends Model
     }
 
     /**
-     * Limit to venues that have at least one bookable court (active + live owner).
+     * Whether an admin has approved this venue to be visible to customers.
+     */
+    public function isApproved(): bool
+    {
+        return ! is_null($this->approved_at);
+    }
+
+    /**
+     * Limit to venues an admin has approved.
+     */
+    public function scopeApproved($query)
+    {
+        return $query->whereNotNull('approved_at');
+    }
+
+    /**
+     * Limit to venues customers can book: the venue itself is approved AND it
+     * has at least one bookable court (active + live owner).
      */
     public function scopeBookable($query)
     {
-        return $query->whereHas('courts', fn ($court) => $court->bookable());
+        return $query->approved()
+            ->whereHas('courts', fn ($court) => $court->bookable());
     }
 }

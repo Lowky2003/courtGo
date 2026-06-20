@@ -41,6 +41,7 @@
                             <th class="px-4 py-3 font-medium">Venue</th>
                             <th class="px-4 py-3 font-medium">Location</th>
                             <th class="px-4 py-3 font-medium">Courts</th>
+                            <th class="px-4 py-3 font-medium">Status</th>
                             <th class="px-4 py-3 font-medium text-right">Actions</th>
                         </tr>
                     </thead>
@@ -57,6 +58,13 @@
                                 </td>
                                 <td class="px-4 py-3 text-zinc-500">{{ $venue->city }}, {{ $venue->state }}</td>
                                 <td class="px-4 py-3 text-zinc-500">{{ $venue->courts_count }}</td>
+                                <td class="px-4 py-3">
+                                    @if ($venue->isApproved())
+                                        <flux:badge color="green" size="sm">Approved</flux:badge>
+                                    @else
+                                        <flux:badge color="amber" size="sm">Pending approval</flux:badge>
+                                    @endif
+                                </td>
                                 <td class="px-4 py-3">
                                     <div class="flex justify-end gap-2">
                                         <flux:button size="sm" variant="primary" :href="route('owner.venues.courts', $venue)" wire:navigate>

@@ -2,6 +2,7 @@
 
 use App\Enums\UserRole;
 use App\Livewire\Admin\Owners;
+use App\Livewire\Admin\Venues;
 use App\Models\Court;
 use App\Models\User;
 use App\Models\Venue;
@@ -37,15 +38,15 @@ test('a customer cannot access the admin area', function () {
     $this->actingAs($customer)->get('/admin/dashboard')->assertForbidden();
 });
 
-test('an admin can approve a pending owner', function () {
+test('an admin can approve a pending venue', function () {
     $admin = User::factory()->create(['role' => UserRole::Admin]);
-    $owner = User::factory()->pending()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->pending()->create();
 
-    expect($owner->isApproved())->toBeFalse();
+    expect($venue->isApproved())->toBeFalse();
 
-    Livewire::actingAs($admin)->test(Owners::class)->call('approve', $owner->id);
+    Livewire::actingAs($admin)->test(Venues::class)->call('approve', $venue->id);
 
-    expect($owner->fresh()->isApproved())->toBeTrue();
+    expect($venue->fresh()->isApproved())->toBeTrue();
 });
 
 test('an admin can suspend and unsuspend an owner', function () {

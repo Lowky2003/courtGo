@@ -33,7 +33,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'role', 'is_suspended', 'approved_at', 'google_id', 'stripe_connect_account_id', 'connect_onboarded', 'business_registration_number'])]
+#[Fillable(['name', 'email', 'password', 'role', 'is_suspended', 'google_id', 'stripe_connect_account_id', 'connect_onboarded', 'business_registration_number'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -59,7 +59,6 @@ class User extends Authenticatable implements PasskeyUser
     {
         return [
             'email_verified_at' => 'datetime',
-            'approved_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
             'connect_onboarded' => 'boolean',
@@ -84,22 +83,14 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
-     * Whether an admin has approved this owner to go live.
-     */
-    public function isApproved(): bool
-    {
-        return ! is_null($this->approved_at);
-    }
-
-    /**
-     * An owner can accept bookings only when an admin has approved them, they
-     * have an active subscription, AND they have completed Stripe Connect
-     * onboarding (so they can be paid out) — and they're not suspended.
+     * Owner-level readiness to be paid for bookings: an active subscription AND
+     * completed Stripe Connect onboarding (so payouts can reach them), and not
+     * suspended. Whether a customer can actually see/book a venue ALSO requires
+     * that venue to be admin-approved — see Venue::isApproved() / Court::scopeBookable().
      */
     public function canAcceptBookings(): bool
     {
         return ! $this->is_suspended
-            && $this->isApproved()
             && $this->subscribed('default')
             && $this->connect_onboarded;
     }

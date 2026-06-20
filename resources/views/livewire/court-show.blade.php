@@ -20,7 +20,9 @@
 
         <div>
             <flux:heading size="lg">Available sessions</flux:heading>
-            @if ($sessions->isEmpty())
+            @if (! $bookable)
+                <flux:text class="text-zinc-400">This venue isn't open for booking yet. Please check back soon.</flux:text>
+            @elseif ($sessions->isEmpty())
                 <flux:text class="text-zinc-400">No sessions available on this date. Try another day.</flux:text>
             @else
                 <div class="mt-3 space-y-2">

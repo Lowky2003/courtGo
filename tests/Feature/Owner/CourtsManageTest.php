@@ -465,14 +465,26 @@ test('the courts page renders for the venue owner', function () {
         ->assertSeeLivewire(Courts::class);
 });
 
-test('an unapproved owner cannot add courts until approved', function () {
-    $owner = User::factory()->pending()->create(['role' => UserRole::Owner]); // approved_at null
-    $venue = Venue::factory()->for($owner, 'owner')->create();
+test('an owner can add courts to a venue that is still pending approval', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->pending()->for($owner, 'owner')->create();
 
     Livewire::actingAs($owner)
         ->test(Courts::class, ['venue' => $venue])
-        ->assertSee('Pending admin approval')
-        ->assertDontSeeHtml('wire:click="startWizard"') // the "Add courts" button is hidden
-        ->call('startWizard')
-        ->assertForbidden();                            // and the action is blocked anyway
+        ->assertSee('Pending admin approval') // informational banner, not a gate
+        ->call('startWizard')                 // creating courts is NOT blocked
+        ->set('sport', 'Badminton')
+        ->set('count', 1)
+        ->call('toStep2')
+        ->set('scheduleMode', 'same')
+        ->call('toStep3')
+        ->set('sessions.0.days', [1])
+        ->set('sessions.0.start_time', '20:00')
+        ->set('sessions.0.end_time', '22:00')
+        ->set('sessions.0.hours', 2)
+        ->set('sessions.0.price', 40)
+        ->call('create')
+        ->assertHasNoErrors();
+
+    expect($venue->courts()->count())->toBe(1);
 });

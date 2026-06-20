@@ -16,7 +16,7 @@ test('registering with role=owner creates an owner account', function () {
         ->toBe(UserRole::Owner);
 });
 
-test('a newly registered owner starts pending admin approval', function () {
+test('a newly registered owner has nothing live until they set up billing and get a venue approved', function () {
     $this->post(route('register.store'), [
         'name' => 'New Boss',
         'email' => 'newboss@example.com',
@@ -27,8 +27,10 @@ test('a newly registered owner starts pending admin approval', function () {
 
     $owner = User::where('email', 'newboss@example.com')->first();
 
+    // A fresh owner has no venues yet and can't accept bookings (no subscription / Connect).
     expect($owner->role)->toBe(UserRole::Owner)
-        ->and($owner->isApproved())->toBeFalse();
+        ->and($owner->venues()->count())->toBe(0)
+        ->and($owner->canAcceptBookings())->toBeFalse();
 });
 
 test('registering without a role still creates a customer', function () {

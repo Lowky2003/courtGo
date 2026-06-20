@@ -1,6 +1,6 @@
 <div class="space-y-6 p-6 max-w-4xl mx-auto w-full">
     <flux:heading size="xl">Manage Owners</flux:heading>
-    <flux:text>Approve new owners so they can go live. Suspend an owner to immediately hide all their courts from customers.</flux:text>
+    <flux:text>Suspend an owner to immediately hide all their venues from customers. Approve individual venues on the <a class="underline" href="{{ route('admin.venues') }}" wire:navigate>Venues</a> page.</flux:text>
 
     @if ($owners->isEmpty())
         <flux:text class="text-zinc-400">No owners yet.</flux:text>
@@ -26,18 +26,12 @@
                             <td class="px-4 py-3">
                                 @if ($owner->is_suspended)
                                     <flux:badge color="red" size="sm">Suspended</flux:badge>
-                                @elseif (! $owner->isApproved())
-                                    <flux:badge color="amber" size="sm">Pending approval</flux:badge>
                                 @else
                                     <flux:badge color="green" size="sm">Active</flux:badge>
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <div class="flex justify-end gap-2">
-                                    @if (! $owner->isApproved())
-                                        <flux:button size="sm" variant="primary" wire:click="approve({{ $owner->id }})" wire:confirm="Approve this owner? They'll be able to go live.">Approve</flux:button>
-                                    @endif
-
                                     @if ($owner->is_suspended)
                                         <flux:button size="sm" variant="primary" wire:click="toggleSuspend({{ $owner->id }})">Unsuspend</flux:button>
                                     @else

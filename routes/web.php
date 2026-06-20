@@ -67,6 +67,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::redirect('/', '/admin/dashboard')->name('home');
     Route::get('/dashboard', \App\Livewire\Admin\Dashboard::class)->name('dashboard');
     Route::get('/owners', \App\Livewire\Admin\Owners::class)->name('owners');
+    Route::get('/venues', \App\Livewire\Admin\Venues::class)->name('venues');
 });
 
 Route::get('/auth/google/redirect', [GoogleController::class, 'redirect'])->name('google.redirect');

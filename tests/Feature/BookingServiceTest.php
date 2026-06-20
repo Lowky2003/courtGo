@@ -80,3 +80,23 @@ test('reserving a court that is not live throws SlotUnavailable', function () {
     expect(fn () => app(BookingService::class)->reserve(User::factory()->create(), $session, $date))
         ->toThrow(SlotUnavailableException::class);
 });
+
+test('reserving a court in a pending venue throws SlotUnavailable even with a live owner', function () {
+    $date = Carbon::parse('2026-07-06');
+    $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
+    $owner->subscriptions()->create([
+        'type' => 'default',
+        'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active',
+        'stripe_price' => 'price_test',
+        'quantity' => 1,
+    ]);
+    $venue = Venue::factory()->pending()->for($owner, 'owner')->create(); // awaiting admin approval
+    $court = Court::factory()->for($venue)->create(['is_active' => true]);
+    $session = SessionTemplate::factory()->for($court)->create([
+        'day_of_week' => $date->dayOfWeek, 'start_time' => '09:00', 'end_time' => '11:00',
+    ]);
+
+    expect(fn () => app(BookingService::class)->reserve(User::factory()->create(), $session, $date))
+        ->toThrow(SlotUnavailableException::class);
+});

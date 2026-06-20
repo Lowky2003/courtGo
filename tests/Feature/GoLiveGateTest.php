@@ -57,29 +57,34 @@ test('a court is not bookable when the owner is not subscribed', function () {
     expect($court->isBookable())->toBeFalse();
 });
 
-test('a pending owner cannot accept bookings even when subscribed and onboarded', function () {
-    $owner = User::factory()->pending()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
+test('a court in a pending venue is not bookable even when the owner is live', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
     activeSubscriptionFor($owner);
+    $venue = Venue::factory()->pending()->for($owner, 'owner')->create();
+    $court = Court::factory()->for($venue)->create(['is_active' => true]);
 
-    expect($owner->fresh()->canAcceptBookings())->toBeFalse();
+    expect($court->fresh()->isBookable())->toBeFalse();
 });
 
-test('a pending owners courts are hidden from customers', function () {
-    $owner = User::factory()->pending()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
+test('a pending venue is hidden from customers', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
     activeSubscriptionFor($owner);
-    $venue = Venue::factory()->for($owner, 'owner')->create();
+    $venue = Venue::factory()->pending()->for($owner, 'owner')->create();
+    Court::factory()->for($venue)->create(['is_active' => true]);
+
+    expect(Court::bookable()->count())->toBe(0)
+        ->and(Venue::bookable()->count())->toBe(0);
+});
+
+test('approving a pending venue makes its courts bookable', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
+    activeSubscriptionFor($owner);
+    $venue = Venue::factory()->pending()->for($owner, 'owner')->create();
     Court::factory()->for($venue)->create(['is_active' => true]);
 
     expect(Court::bookable()->count())->toBe(0);
-});
 
-test('approving a pending owner lets them go live', function () {
-    $owner = User::factory()->pending()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
-    activeSubscriptionFor($owner);
+    $venue->update(['approved_at' => now()]);
 
-    expect($owner->fresh()->canAcceptBookings())->toBeFalse();
-
-    $owner->update(['approved_at' => now()]);
-
-    expect($owner->fresh()->canAcceptBookings())->toBeTrue();
+    expect(Court::bookable()->count())->toBe(1);
 });

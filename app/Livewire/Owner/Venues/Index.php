@@ -42,6 +42,8 @@ class Index extends Component
 
         $this->reset('name', 'description', 'address', 'city', 'state');
         $this->dispatch('clear-search-select'); // clears the custom state dropdown
+
+        session()->flash('status', 'Venue added! It\'s now pending admin approval — add courts and schedules in the meantime.');
     }
 
     public function delete(int $venueId): void

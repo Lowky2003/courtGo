@@ -43,24 +43,27 @@ class Court extends Model
     }
 
     /**
-     * A court can be booked only when it is active AND its owner is able to
-     * accept bookings (active subscription + completed Connect onboarding).
+     * A court can be booked only when it is active, its venue has been approved
+     * by an admin, AND its owner is able to accept bookings (active subscription
+     * + completed Connect onboarding).
      */
     public function isBookable(): bool
     {
-        return $this->is_active && $this->venue->owner->canAcceptBookings();
+        return $this->is_active
+            && $this->venue->isApproved()
+            && $this->venue->owner->canAcceptBookings();
     }
 
     /**
-     * Limit to courts customers can actually book: active, with a live owner
-     * (Connect-onboarded + an active/trialing subscription).
+     * Limit to courts customers can actually book: active, in an admin-approved
+     * venue, with a live owner (Connect-onboarded + an active/trialing subscription).
      */
     public function scopeBookable($query)
     {
         return $query->where('is_active', true)
+            ->whereHas('venue', fn ($venue) => $venue->whereNotNull('approved_at'))
             ->whereHas('venue.owner', function ($owner) {
                 $owner->where('is_suspended', false)
-                    ->whereNotNull('approved_at')
                     ->where('connect_onboarded', true)
                     ->whereHas('subscriptions', function ($sub) {
                         $sub->where('type', 'default')->whereIn('stripe_status', ['active', 'trialing']);

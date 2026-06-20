@@ -19,5 +19,8 @@
         @endforeach
     </div>
 
-    <flux:button variant="primary" :href="route('admin.owners')" wire:navigate>Manage owners</flux:button>
+    <div class="flex flex-wrap gap-2">
+        <flux:button variant="primary" :href="route('admin.venues')" wire:navigate>Approve venues</flux:button>
+        <flux:button variant="ghost" :href="route('admin.owners')" wire:navigate>Manage owners</flux:button>
+    </div>
 </div>

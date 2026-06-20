@@ -40,6 +40,9 @@
                         <flux:sidebar.item icon="chart-bar" :href="route('admin.dashboard')" :current="request()->routeIs('admin.dashboard')" wire:navigate>
                             {{ __('Admin Dashboard') }}
                         </flux:sidebar.item>
+                        <flux:sidebar.item icon="building-storefront" :href="route('admin.venues')" :current="request()->routeIs('admin.venues')" wire:navigate>
+                            {{ __('Venues') }}
+                        </flux:sidebar.item>
                         <flux:sidebar.item icon="users" :href="route('admin.owners')" :current="request()->routeIs('admin.owners')" wire:navigate>
                             {{ __('Owners') }}
                         </flux:sidebar.item>

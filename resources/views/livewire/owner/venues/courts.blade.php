@@ -7,14 +7,17 @@
         <flux:text>{{ $venue->city }}, {{ $venue->state }}</flux:text>
     </div>
 
-    @if (! $this->canAddCourts())
+    @unless ($venue->isApproved())
         <flux:callout variant="warning" icon="clock">
             <flux:callout.heading>Pending admin approval</flux:callout.heading>
             <flux:callout.text>
-                We review new venues before they go live. You'll be able to add courts once an admin approves your account.
+                You can add courts and set their schedules now. This venue becomes visible and bookable to
+                customers once an admin approves it.
             </flux:callout.text>
         </flux:callout>
-    @elseif (! $showWizard)
+    @endunless
+
+    @if (! $showWizard)
         <flux:button variant="primary" icon="plus" wire:click="startWizard">Add courts</flux:button>
     @else
         {{-- ───────────────────────── Add-courts wizard ───────────────────────── --}}

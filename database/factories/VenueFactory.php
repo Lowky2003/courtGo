@@ -26,6 +26,19 @@ class VenueFactory extends Factory
             'address' => fake()->streetAddress(),
             'city' => fake()->city(),
             'state' => fake()->randomElement(['Selangor', 'Kuala Lumpur', 'Penang', 'Johor']),
+            // Approved by default so existing tests build live venues; use pending()
+            // for the awaiting-approval case.
+            'approved_at' => now(),
         ];
+    }
+
+    /**
+     * Indicate that the venue is still awaiting admin approval.
+     */
+    public function pending(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'approved_at' => null,
+        ]);
     }
 }

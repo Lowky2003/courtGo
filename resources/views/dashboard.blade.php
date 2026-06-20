@@ -22,23 +22,32 @@
         @elseif ($user->role === \App\Enums\UserRole::Admin)
             @php($cards = [
                 ['title' => 'Admin Dashboard', 'desc' => 'Platform stats and overview.', 'href' => route('admin.dashboard'), 'icon' => 'chart-bar'],
-                ['title' => 'Manage Owners', 'desc' => 'Approve or suspend owners.', 'href' => route('admin.owners'), 'icon' => 'users'],
+                ['title' => 'Approve Venues', 'desc' => 'Review and approve new venues.', 'href' => route('admin.venues'), 'icon' => 'building-storefront'],
+                ['title' => 'Manage Owners', 'desc' => 'Suspend or unsuspend owners.', 'href' => route('admin.owners'), 'icon' => 'users'],
             ])
         @endif
 
-        @if ($user->role === \App\Enums\UserRole::Owner && ! $user->canAcceptBookings())
-            <flux:callout variant="warning" icon="exclamation-triangle">
-                <flux:callout.text>
-                    @if (! $user->isApproved())
-                        <strong>Your account is pending approval.</strong>
-                        We review new venues before they go live. You can add your venue and set up
-                        <a class="underline" href="{{ route('owner.billing') }}">Billing</a> now — customers will be able to book once you're approved.
-                    @else
+        @if ($user->role === \App\Enums\UserRole::Owner)
+            @php($pendingVenues = $user->venues()->whereNull('approved_at')->count())
+
+            @unless ($user->canAcceptBookings())
+                <flux:callout variant="warning" icon="exclamation-triangle">
+                    <flux:callout.text>
                         <strong>Your courts aren't live yet.</strong>
-                        Finish your subscription and connect your bank in <a class="underline" href="{{ route('owner.billing') }}">Billing</a> so customers can book.
-                    @endif
-                </flux:callout.text>
-            </flux:callout>
+                        Finish your subscription and connect your bank in
+                        <a class="underline" href="{{ route('owner.billing') }}">Billing</a> so customers can book.
+                    </flux:callout.text>
+                </flux:callout>
+            @endunless
+
+            @if ($pendingVenues > 0)
+                <flux:callout variant="warning" icon="clock">
+                    <flux:callout.text>
+                        <strong>{{ $pendingVenues }} {{ \Illuminate\Support\Str::plural('venue', $pendingVenues) }} pending admin approval.</strong>
+                        You can add courts and schedules now — each venue becomes visible to customers once an admin approves it.
+                    </flux:callout.text>
+                </flux:callout>
+            @endif
         @endif
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
