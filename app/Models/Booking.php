@@ -16,6 +16,7 @@ class Booking extends Model
         'customer_id',
         'court_id',
         'session_template_id',
+        'booking_group',
         'booking_date',
         'start_time',
         'end_time',

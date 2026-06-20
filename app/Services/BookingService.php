@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class BookingService
 {
@@ -28,10 +29,12 @@ class BookingService
      */
     public function reserveMany(User $customer, iterable $sessions, Carbon $date): array
     {
-        return DB::transaction(function () use ($customer, $sessions, $date) {
+        $group = (string) Str::uuid(); // slots booked together share one group
+
+        return DB::transaction(function () use ($customer, $sessions, $date, $group) {
             $bookings = [];
             foreach ($sessions as $session) {
-                $bookings[] = $this->reserve($customer, $session, $date);
+                $bookings[] = $this->reserve($customer, $session, $date, $group);
             }
 
             return $bookings;
@@ -44,10 +47,11 @@ class BookingService
      *
      * @throws SlotUnavailableException
      */
-    public function reserve(User $customer, SessionTemplate $session, Carbon $date): Booking
+    public function reserve(User $customer, SessionTemplate $session, Carbon $date, ?string $group = null): Booking
     {
         $date = $date->copy()->startOfDay();
         $court = $session->court;
+        $group ??= (string) Str::uuid(); // a lone booking is its own group
 
         if (! $court->isBookable()) {
             throw new SlotUnavailableException('This court is not open for booking yet.');
@@ -59,7 +63,7 @@ class BookingService
         }
 
         try {
-            return DB::transaction(function () use ($customer, $session, $court, $date) {
+            return DB::transaction(function () use ($customer, $session, $court, $date, $group) {
                 // Serialise concurrent reservers for this exact slot.
                 $court->bookings()
                     ->whereDate('booking_date', $date->toDateString())
@@ -80,6 +84,7 @@ class BookingService
                     'customer_id' => $customer->id,
                     'court_id' => $court->id,
                     'session_template_id' => $session->id,
+                    'booking_group' => $group,
                     'booking_date' => $date->toDateString(),
                     'start_time' => $session->start_time,
                     'end_time' => $session->end_time,

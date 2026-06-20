@@ -61,9 +61,10 @@ class MyBookings extends Component
                     ->orWhere(fn ($p) => $p->where('status', BookingStatus::Pending->value)
                         ->where('hold_expires_at', '<=', now()));
             }))
+            ->orderBy('booking_group') // keep slots booked together adjacent…
             ->orderBy('court_id')
             ->orderBy('booking_date')
-            ->orderBy('start_time')
+            ->orderBy('start_time')    // …in time order, so consecutive ones merge
             ->get();
 
         return view('livewire.my-bookings', ['groups' => $this->groupConsecutive($bookings)]);
@@ -84,7 +85,11 @@ class MyBookings extends Component
         foreach ($bookings as $booking) {
             $status = $this->displayStatus($booking);
 
+            // Only merge slots booked in the SAME action (same booking_group) that
+            // are also back-to-back on the same court, date and status.
             $continues = $current
+                && $current['group'] !== null
+                && $current['group'] === $booking->booking_group
                 && $current['court']->id === $booking->court_id
                 && $current['date']->isSameDay($booking->booking_date)
                 && $current['status'] === $status
@@ -108,6 +113,7 @@ class MyBookings extends Component
             }
 
             $current = [
+                'group' => $booking->booking_group,
                 'court' => $booking->court,
                 'date' => $booking->booking_date,
                 'start_time' => $booking->start_time,
@@ -117,6 +123,7 @@ class MyBookings extends Component
                 'status' => $status,
                 'ids' => [$booking->id],
                 'hold_expires_at' => $booking->hold_expires_at,
+                'booked_at' => $booking->created_at,
             ];
         }
 
@@ -124,9 +131,8 @@ class MyBookings extends Component
             $groups[] = $current;
         }
 
-        // Newest day first, then latest start time.
-        usort($groups, fn ($a, $b) => $b['date']->timestamp <=> $a['date']->timestamp
-            ?: strcmp((string) $b['start_time'], (string) $a['start_time']));
+        // Most recently booked first.
+        usort($groups, fn ($a, $b) => $b['booked_at'] <=> $a['booked_at']);
 
         return $groups;
     }

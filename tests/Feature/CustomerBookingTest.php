@@ -274,20 +274,20 @@ test('booking the same slot twice is rejected', function () {
     expect(Booking::where('court_id', $session->court_id)->count())->toBe(1);
 });
 
-test('consecutive slots on the same court are grouped into one row in my bookings', function () {
+test('consecutive slots booked together are grouped into one row in my bookings', function () {
     $customer = User::factory()->create();
     $court = Court::factory()->create();
     $date = Carbon::parse('2026-07-06')->toDateString();
 
-    // Three back-to-back 30-minute slots, plus one separate slot — all confirmed.
+    // Three back-to-back 30-minute slots booked together (one group), plus a separate slot.
     foreach ([['10:00:00', '10:30:00'], ['10:30:00', '11:00:00'], ['11:00:00', '11:30:00']] as [$start, $end]) {
         Booking::factory()->for($court)->create([
-            'customer_id' => $customer->id, 'booking_date' => $date,
+            'customer_id' => $customer->id, 'booking_date' => $date, 'booking_group' => 'morning',
             'start_time' => $start, 'end_time' => $end, 'price' => 8,
         ]);
     }
     Booking::factory()->for($court)->create([
-        'customer_id' => $customer->id, 'booking_date' => $date,
+        'customer_id' => $customer->id, 'booking_date' => $date, 'booking_group' => 'afternoon',
         'start_time' => '14:00:00', 'end_time' => '14:30:00', 'price' => 8,
     ]);
 
@@ -300,6 +300,38 @@ test('consecutive slots on the same court are grouped into one row in my booking
         ->and(substr((string) $merged['start_time'], 0, 5))->toBe('10:00')
         ->and(substr((string) $merged['end_time'], 0, 5))->toBe('11:30')
         ->and($merged['price'])->toBe(24.0); // 3 × RM 8
+});
+
+test('back-to-back slots booked in separate actions are NOT grouped', function () {
+    $customer = User::factory()->create();
+    $court = Court::factory()->create();
+    $date = Carbon::parse('2026-07-06')->toDateString();
+
+    // First booking 10am–12pm, then a separate booking 12pm–2pm (different action).
+    Booking::factory()->for($court)->create(['customer_id' => $customer->id, 'booking_date' => $date, 'booking_group' => 'first', 'start_time' => '10:00:00', 'end_time' => '12:00:00', 'price' => 16]);
+    Booking::factory()->for($court)->create(['customer_id' => $customer->id, 'booking_date' => $date, 'booking_group' => 'second', 'start_time' => '12:00:00', 'end_time' => '14:00:00', 'price' => 16]);
+
+    $groups = Livewire::actingAs($customer)->test(MyBookings::class)->viewData('groups');
+
+    expect($groups)->toHaveCount(2); // back-to-back but booked separately → two rows
+});
+
+test('my bookings are ordered by when they were booked, newest first', function () {
+    $customer = User::factory()->create();
+    $court = Court::factory()->create();
+    $date = Carbon::parse('2026-07-06')->toDateString();
+
+    Carbon::setTestNow(Carbon::parse('2026-06-20 09:00:00'));
+    $older = Booking::factory()->for($court)->create(['customer_id' => $customer->id, 'booking_date' => $date, 'booking_group' => 'a', 'start_time' => '10:00:00', 'end_time' => '11:00:00']);
+
+    Carbon::setTestNow(Carbon::parse('2026-06-20 10:00:00'));
+    $newer = Booking::factory()->for($court)->create(['customer_id' => $customer->id, 'booking_date' => $date, 'booking_group' => 'b', 'start_time' => '08:00:00', 'end_time' => '09:00:00']);
+
+    $groups = Livewire::actingAs($customer)->test(MyBookings::class)->viewData('groups');
+    Carbon::setTestNow();
+
+    expect($groups[0]['ids'])->toContain($newer->id)  // most recently booked first…
+        ->and($groups[1]['ids'])->toContain($older->id); // …even though its slot is earlier in the day
 });
 
 test('continue payment on a grouped row pays for all its held slots', function () {
