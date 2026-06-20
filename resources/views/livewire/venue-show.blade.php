@@ -15,6 +15,32 @@
             @if ($venue->description)
                 <flux:text class="text-zinc-500 dark:text-zinc-400">{{ $venue->description }}</flux:text>
             @endif
+
+            {{-- Photo gallery --}}
+            @if ($venue->photos->isNotEmpty())
+                <div class="grid grid-cols-3 gap-2">
+                    @foreach ($venue->photos as $photo)
+                        <a href="{{ $photo->imageUrl() }}" target="_blank" rel="noopener noreferrer" wire:key="vp-{{ $photo->id }}">
+                            <img src="{{ $photo->imageUrl() }}" alt="" class="h-20 w-full rounded-lg object-cover" />
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+
+            {{-- Amenities --}}
+            @if (! empty($venue->amenityLabels()))
+                <div class="flex flex-wrap gap-2">
+                    @foreach ($venue->amenityLabels() as $amenity)
+                        <span class="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                            <flux:icon :name="$amenity['icon']" class="size-3.5" />
+                            {{ $amenity['label'] }}
+                        </span>
+                    @endforeach
+                </div>
+            @endif
+
+            {{-- Directions --}}
+            <x-venue-directions :venue="$venue" />
         </div>
 
         {{-- RIGHT: choose a sport, date and time. min-w-0 lets this 2/3 track

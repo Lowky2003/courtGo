@@ -36,6 +36,7 @@ class VenueShow extends Component
     public function mount(Venue $venue): void
     {
         $this->venue = $venue;
+        $this->venue->loadMissing('photos');
         // No default date — the customer chooses one first, then the calendar shows.
 
         // Default to the sport the customer searched for (passed in the URL) when

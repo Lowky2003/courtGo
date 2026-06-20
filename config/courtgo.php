@@ -135,4 +135,30 @@ return [
 
     'support_email' => env('COURTGO_SUPPORT_EMAIL', 'support@courtgo.my'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Venue amenities
+    |--------------------------------------------------------------------------
+    |
+    | The fixed list owners tick from; customers see the ticked ones. Each is
+    | a label + a Heroicon name (free Flux icon set).
+    |
+    */
+
+    'amenities' => [
+        'parking' => ['label' => 'Parking', 'icon' => 'truck'],
+        'wifi' => ['label' => 'Free WiFi', 'icon' => 'wifi'],
+        'showers' => ['label' => 'Showers', 'icon' => 'sparkles'],
+        'changing_rooms' => ['label' => 'Changing rooms', 'icon' => 'user-group'],
+        'lockers' => ['label' => 'Lockers', 'icon' => 'lock-closed'],
+        'surau' => ['label' => 'Surau', 'icon' => 'moon'],
+        'cafe' => ['label' => 'Café / drinks', 'icon' => 'cake'],
+        'equipment_rental' => ['label' => 'Equipment rental', 'icon' => 'shopping-bag'],
+        'air_conditioned' => ['label' => 'Air-conditioned', 'icon' => 'cloud'],
+        'spectator_seating' => ['label' => 'Spectator seating', 'icon' => 'eye'],
+        'toilets' => ['label' => 'Toilets', 'icon' => 'home'],
+        'wheelchair' => ['label' => 'Wheelchair accessible', 'icon' => 'heart'],
+        'cctv' => ['label' => 'CCTV', 'icon' => 'video-camera'],
+    ],
+
 ];

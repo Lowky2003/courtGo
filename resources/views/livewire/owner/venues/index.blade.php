@@ -70,8 +70,8 @@
                                         <flux:button size="sm" variant="primary" :href="route('owner.venues.courts', $venue)" wire:navigate>
                                             Manage courts
                                         </flux:button>
-                                        <flux:button size="sm" variant="ghost" icon="photo" :href="route('owner.venues.photo.edit', $venue)" wire:navigate>
-                                            Photo
+                                        <flux:button size="sm" variant="ghost" icon="identification" :href="route('owner.venues.profile', $venue)" wire:navigate>
+                                            Profile
                                         </flux:button>
                                         <flux:button
                                             size="sm"

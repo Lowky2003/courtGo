@@ -22,17 +22,19 @@ class Venue extends Model
         'state',
         'image_path',
         'approved_at',
+        'amenities',
     ];
 
     protected function casts(): array
     {
         return [
             'approved_at' => 'datetime',
+            'amenities' => 'array',
         ];
     }
 
     /**
-     * Clean up the uploaded image when a venue is deleted.
+     * Clean up uploaded images when a venue is deleted.
      */
     protected static function booted(): void
     {
@@ -40,6 +42,9 @@ class Venue extends Model
             if ($venue->image_path) {
                 Storage::disk('public')->delete($venue->image_path);
             }
+
+            // Remove gallery files (the DB cascade deletes the rows, not the files).
+            $venue->photos->each->delete();
         });
     }
 
@@ -70,12 +75,37 @@ class Venue extends Model
     }
 
     /**
+     * Gallery photos shown on the venue page, in display order.
+     */
+    public function photos(): HasMany
+    {
+        return $this->hasMany(VenuePhoto::class)->orderBy('position')->orderBy('id');
+    }
+
+    /**
      * Dates the whole venue is closed (holidays, maintenance) — every court is
      * unbookable on these dates.
      */
     public function closedDates(): HasMany
     {
         return $this->hasMany(VenueClosedDate::class);
+    }
+
+    /**
+     * The ticked amenities resolved to their config entries, in config order.
+     * Unknown/removed keys are dropped.
+     *
+     * @return array<int, array{key: string, label: string, icon: string}>
+     */
+    public function amenityLabels(): array
+    {
+        $chosen = $this->amenities ?? [];
+
+        return collect(config('courtgo.amenities'))
+            ->filter(fn ($meta, $key) => in_array($key, $chosen, true))
+            ->map(fn ($meta, $key) => ['key' => $key, 'label' => $meta['label'], 'icon' => $meta['icon']])
+            ->values()
+            ->all();
     }
 
     /**

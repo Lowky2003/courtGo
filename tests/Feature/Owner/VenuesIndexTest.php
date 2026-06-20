@@ -113,3 +113,12 @@ test('a customer cannot open the venues page', function () {
 
     $this->actingAs($customer)->get('/owner/venues')->assertForbidden();
 });
+
+test('the venues list links to each venue profile', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->for($owner, 'owner')->create();
+
+    $this->actingAs($owner)->get(route('owner.venues.index'))
+        ->assertOk()
+        ->assertSee(route('owner.venues.profile', $venue), escape: false);
+});
