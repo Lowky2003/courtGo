@@ -115,3 +115,17 @@ test('the owner dashboard tells them to upload verification documents to go live
         ->assertOk()
         ->assertSee('Upload your verification documents to go live');
 });
+
+test('the verification section shows while pending and is hidden once approved', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+
+    $pending = Venue::factory()->pending()->for($owner, 'owner')->create();
+    $this->actingAs($owner)->get(route('owner.venues.profile', $pending))
+        ->assertOk()
+        ->assertSee('Verification documents');
+
+    $approved = Venue::factory()->for($owner, 'owner')->create(); // approved by default
+    $this->actingAs($owner)->get(route('owner.venues.profile', $approved))
+        ->assertOk()
+        ->assertDontSee('Verification documents');
+});

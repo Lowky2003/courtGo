@@ -14,7 +14,9 @@
     @endif
 
     {{-- Verification documents (private — only you and the CourtGo admin can see these).
-         Kept at the top because they're required before the venue can go live. --}}
+         Shown at the top while approval is pending; hidden once the venue is
+         approved — the owner no longer needs to see or change them. --}}
+    @unless ($venue->isApproved())
     <div id="verification" class="scroll-mt-6 space-y-4 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
         <div class="space-y-1">
             <flux:heading size="lg">Verification documents <span class="text-red-600">*required</span></flux:heading>
@@ -24,11 +26,7 @@
         </div>
 
         {{-- Make the consequence unmistakable --}}
-        @if ($venue->isApproved())
-            <flux:callout variant="success" icon="check-circle">
-                <flux:callout.text>Your documents were verified and this venue is approved.</flux:callout.text>
-            </flux:callout>
-        @elseif ($venue->hasAllDocuments())
+        @if ($venue->hasAllDocuments())
             <flux:callout variant="warning" icon="clock">
                 <flux:callout.text>All documents uploaded — waiting for the CourtGo admin to review and approve. Your courts go live once approved.</flux:callout.text>
             </flux:callout>
@@ -85,6 +83,7 @@
             </div>
         @endforeach
     </div>
+    @endunless
 
     {{-- Amenities (Livewire — saves automatically when toggled) --}}
     <div class="space-y-3 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
