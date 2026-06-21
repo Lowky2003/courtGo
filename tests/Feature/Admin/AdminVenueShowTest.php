@@ -28,13 +28,35 @@ test('an admin can open a venue and see its information', function () {
         ->assertSee('No outside food allowed.'); // policy
 });
 
-test('an admin can approve a venue from its detail page', function () {
-    $venue = Venue::factory()->pending()->create();
+test('an admin can approve a venue from its detail page once fully verified', function () {
+    $venue = Venue::factory()->pending()->verified()->create();
     $admin = User::factory()->create(['role' => UserRole::Admin]);
 
     Livewire::actingAs($admin)
         ->test(VenueShow::class, ['venue' => $venue])
         ->assertSee('Pending approval')
+        ->call('approve');
+
+    expect($venue->fresh()->isApproved())->toBeTrue();
+});
+
+test('a venue cannot be approved until every verification item is ticked', function () {
+    $venue = Venue::factory()->pending()->create(); // no items verified
+    $admin = User::factory()->create(['role' => UserRole::Admin]);
+
+    Livewire::actingAs($admin)
+        ->test(VenueShow::class, ['venue' => $venue])
+        ->call('approve'); // gated — should do nothing
+
+    expect($venue->fresh()->isApproved())->toBeFalse();
+
+    // After ticking each item, approval goes through.
+    Livewire::actingAs($admin)
+        ->test(VenueShow::class, ['venue' => $venue])
+        ->call('toggleVerified', 'ssm')
+        ->call('toggleVerified', 'right_to_occupy')
+        ->call('toggleVerified', 'council_licence')
+        ->call('toggleVerified', 'address_proof')
         ->call('approve');
 
     expect($venue->fresh()->isApproved())->toBeTrue();

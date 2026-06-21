@@ -43,6 +43,16 @@ class VenueFactory extends Factory
     }
 
     /**
+     * All verification items ticked — so the venue is eligible for approval.
+     */
+    public function verified(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'verified_items' => Venue::verificationKeys(),
+        ]);
+    }
+
+    /**
      * A fully live venue: its owner is Connect-onboarded and the venue has its
      * own active subscription (one subscription per venue).
      */

@@ -203,6 +203,8 @@ class Profile extends Component
             'allAmenities' => config('courtgo.amenities'),
             'weekdays' => config('courtgo.weekdays'),
             'photos' => $this->venue->photos()->get(),
+            'verificationItems' => config('courtgo.verification'),
+            'documents' => $this->venue->documents()->get()->groupBy('type'),
         ]);
     }
 }

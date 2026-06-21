@@ -153,4 +153,49 @@
             <flux:button type="submit" variant="primary" size="sm">Upload layout</flux:button>
         </form>
     </div>
+
+    {{-- Verification documents (private — only you and the CourtGo admin can see these) --}}
+    <div class="space-y-4 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
+        <div class="space-y-1">
+            <flux:heading size="lg">Verification documents</flux:heading>
+            <flux:text class="text-sm text-zinc-500">
+                The admin checks these before approving your venue for booking. They're private — only you and the CourtGo admin can open them. PDF or image, up to 20&nbsp;MB each.
+            </flux:text>
+        </div>
+
+        @error('document') <flux:text class="text-sm text-red-600">{{ $message }}</flux:text> @enderror
+
+        @foreach ($verificationItems as $key => $item)
+            <div class="space-y-2 rounded-lg border border-zinc-100 p-4 dark:border-zinc-800" wire:key="doc-{{ $key }}">
+                <div>
+                    <flux:text class="font-medium">{{ $item['label'] }}</flux:text>
+                    <flux:text class="text-sm text-zinc-500">{{ $item['owner_hint'] }}</flux:text>
+                </div>
+
+                @if (! empty($documents[$key]))
+                    <ul class="space-y-1 text-sm">
+                        @foreach ($documents[$key] as $doc)
+                            <li class="flex items-center justify-between gap-3" wire:key="docfile-{{ $doc->id }}">
+                                <a href="{{ route('venue-documents.show', $doc) }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline dark:text-blue-400">
+                                    📄 {{ $doc->original_name }}
+                                </a>
+                                <form method="POST" action="{{ route('owner.venues.documents.destroy', [$venue, $doc]) }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-xs text-zinc-400 hover:text-red-600">Remove</button>
+                                </form>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+
+                <form method="POST" action="{{ route('owner.venues.documents.store', $venue) }}" enctype="multipart/form-data" class="flex flex-wrap items-center gap-3">
+                    @csrf
+                    <input type="hidden" name="type" value="{{ $key }}" />
+                    <input type="file" name="document" accept=".pdf,image/*" required class="text-sm" />
+                    <flux:button type="submit" variant="ghost" size="sm">Upload</flux:button>
+                </form>
+            </div>
+        @endforeach
+    </div>
 </div>

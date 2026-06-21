@@ -26,11 +26,64 @@
         </div>
 
         @unless ($venue->isApproved())
-            <flux:button variant="primary" wire:click="approve" wire:confirm="Approve this venue? Customers will be able to find and book it.">
-                Approve venue
-            </flux:button>
+            <div class="text-right">
+                <flux:button variant="primary" wire:click="approve" :disabled="! $venue->isFullyVerified()"
+                    wire:confirm="Approve this venue? Customers will be able to find and book it.">
+                    Approve venue
+                </flux:button>
+                @unless ($venue->isFullyVerified())
+                    <flux:text class="mt-1 text-xs text-zinc-500">Verify all {{ count($verificationItems) }} items below first ({{ $venue->verifiedCount() }}/{{ count($verificationItems) }} done).</flux:text>
+                @endunless
+            </div>
         @endunless
     </div>
+
+    {{-- Verification checklist: tick each item (after checking the document) to unlock approval --}}
+    @unless ($venue->isApproved())
+        <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 p-5 space-y-3">
+            <div class="flex items-center justify-between">
+                <flux:heading size="lg">Verification</flux:heading>
+                <flux:badge :color="$venue->isFullyVerified() ? 'green' : 'amber'" size="sm">
+                    {{ $venue->verifiedCount() }}/{{ count($verificationItems) }} verified
+                </flux:badge>
+            </div>
+            <flux:text class="text-sm text-zinc-500">Check each uploaded document, then tick it. Approval unlocks once all are ticked. (Payout identity/bank is handled separately by Stripe.)</flux:text>
+
+            <div class="divide-y divide-zinc-100 dark:divide-zinc-800">
+                @foreach ($verificationItems as $key => $item)
+                    <div class="flex flex-wrap items-start justify-between gap-3 py-3" wire:key="ver-{{ $key }}">
+                        <div class="min-w-0 flex-1 space-y-1">
+                            <div class="flex items-center gap-2">
+                                @if ($venue->isItemVerified($key))
+                                    <flux:icon name="check-circle" variant="solid" class="size-5 text-green-600" />
+                                @else
+                                    <flux:icon name="exclamation-circle" class="size-5 text-amber-500" />
+                                @endif
+                                <flux:text class="font-medium">{{ $item['label'] }}</flux:text>
+                            </div>
+                            <flux:text class="text-sm text-zinc-500">{{ $item['admin_hint'] }}</flux:text>
+
+                            @if (! empty($documents[$key]))
+                                <div class="flex flex-wrap gap-3 pt-1 text-sm">
+                                    @foreach ($documents[$key] as $doc)
+                                        <a href="{{ route('venue-documents.show', $doc) }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline dark:text-blue-400" wire:key="adoc-{{ $doc->id }}">
+                                            📄 {{ $doc->original_name }}
+                                        </a>
+                                    @endforeach
+                                </div>
+                            @else
+                                <flux:text class="pt-1 text-sm text-red-500">No document uploaded by the owner yet.</flux:text>
+                            @endif
+                        </div>
+
+                        <flux:button size="sm" :variant="$venue->isItemVerified($key) ? 'filled' : 'primary'" wire:click="toggleVerified('{{ $key }}')">
+                            {{ $venue->isItemVerified($key) ? 'Verified ✓' : 'Mark verified' }}
+                        </flux:button>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endunless
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
         {{-- LEFT: images --}}

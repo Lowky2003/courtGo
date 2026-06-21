@@ -36,6 +36,7 @@ class Venue extends Model
         'contact_instagram',
         'contact_facebook',
         'layout_image_path',
+        'verified_items',
     ];
 
     protected function casts(): array
@@ -46,6 +47,7 @@ class Venue extends Model
             'announcement_active' => 'boolean',
             'announcement_until' => 'date',
             'opening_hours' => 'array',
+            'verified_items' => 'array',
         ];
     }
 
@@ -61,8 +63,10 @@ class Venue extends Model
                 }
             }
 
-            // Remove gallery files (the DB cascade deletes the rows, not the files).
+            // Remove gallery + verification files (the DB cascade deletes the
+            // rows, not the files).
             $venue->photos->each->delete();
+            $venue->documents->each->delete();
         });
     }
 
@@ -141,6 +145,38 @@ class Venue extends Model
     public function photos(): HasMany
     {
         return $this->hasMany(VenuePhoto::class)->orderBy('position')->orderBy('id');
+    }
+
+    /**
+     * Verification documents the owner uploaded for admin review.
+     */
+    public function documents(): HasMany
+    {
+        return $this->hasMany(VenueDocument::class)->latest();
+    }
+
+    /** All verification keys an admin must tick before this venue can be approved. */
+    public static function verificationKeys(): array
+    {
+        return array_keys(config('courtgo.verification'));
+    }
+
+    /** Whether an admin has ticked a given verification item. */
+    public function isItemVerified(string $key): bool
+    {
+        return in_array($key, $this->verified_items ?? [], true);
+    }
+
+    /** Whether every required verification item has been ticked off. */
+    public function isFullyVerified(): bool
+    {
+        return empty(array_diff(self::verificationKeys(), $this->verified_items ?? []));
+    }
+
+    /** How many of the required verification items are ticked (for progress display). */
+    public function verifiedCount(): int
+    {
+        return count(array_intersect(self::verificationKeys(), $this->verified_items ?? []));
     }
 
     /**

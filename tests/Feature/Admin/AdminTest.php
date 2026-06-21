@@ -31,7 +31,7 @@ test('a customer cannot access the admin area', function () {
 
 test('an admin can approve a pending venue', function () {
     $admin = User::factory()->create(['role' => UserRole::Admin]);
-    $venue = Venue::factory()->pending()->create();
+    $venue = Venue::factory()->pending()->verified()->create(); // verification ticked → approvable
 
     expect($venue->isApproved())->toBeFalse();
 

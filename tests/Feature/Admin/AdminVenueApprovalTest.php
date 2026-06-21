@@ -36,7 +36,7 @@ test('approving one venue makes its courts bookable while the owners other pendi
     $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
 
     // Both venues pending + subscribed, so admin approval is the only difference.
-    $approved = Venue::factory()->pending()->for($owner, 'owner')->subscribed()->create();
+    $approved = Venue::factory()->pending()->verified()->for($owner, 'owner')->subscribed()->create();
     Court::factory()->for($approved)->create(['is_active' => true]);
 
     $stillPending = Venue::factory()->pending()->for($owner, 'owner')->subscribed()->create();

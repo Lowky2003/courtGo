@@ -161,4 +161,38 @@ return [
         'cctv' => ['label' => 'CCTV', 'icon' => 'video-camera'],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Venue verification checklist
+    |--------------------------------------------------------------------------
+    |
+    | Documents an owner uploads and an admin ticks off before a venue can be
+    | approved. Each key is also the document "type". Admin approval is gated
+    | on every item here being verified. This is a product policy, not legal
+    | advice — confirm Malaysian specifics with SSM, LHDN and the local council.
+    |
+    */
+    'verification' => [
+        'ssm' => [
+            'label' => 'SSM business registration',
+            'owner_hint' => 'Upload your SSM business profile or certificate — Form A/D for a sole-proprietorship or partnership, or the company profile + Section 17 (Certificate of Incorporation) for an Sdn Bhd.',
+            'admin_hint' => 'Cross-check the registration number on ssm-einfo.my; confirm the business name matches the venue.',
+        ],
+        'right_to_occupy' => [
+            'label' => 'Right to operate the premises',
+            'owner_hint' => 'Land title or quit-rent (cukai tanah) bill if you own the premises, or a stamped tenancy agreement / owner authorization letter if you rent or manage it.',
+            'admin_hint' => 'Confirm the applicant owns or is authorized to operate at this address.',
+        ],
+        'council_licence' => [
+            'label' => 'Council premise licence (PBT)',
+            'owner_hint' => 'Your local council (Majlis/PBT) business-premise or composite licence for the venue — or proof you have applied for it.',
+            'admin_hint' => 'Check the licence covers this venue address and has not expired.',
+        ],
+        'address_proof' => [
+            'label' => 'Venue address proof',
+            'owner_hint' => 'A recent utility bill or assessment (cukai pintu) bill showing the venue address.',
+            'admin_hint' => 'Confirm the address matches the listing and the court photos.',
+        ],
+    ],
+
 ];

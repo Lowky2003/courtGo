@@ -19,15 +19,35 @@ class VenueShow extends Component
         $this->venue = $venue;
     }
 
-    /** Approve this venue so it becomes visible and bookable to customers. */
+    /** Tick or untick a verification item (e.g. after checking the uploaded document). */
+    public function toggleVerified(string $key): void
+    {
+        if (! in_array($key, Venue::verificationKeys(), true)) {
+            return;
+        }
+
+        $items = $this->venue->verified_items ?? [];
+
+        $items = in_array($key, $items, true)
+            ? array_values(array_diff($items, [$key]))
+            : [...$items, $key];
+
+        $this->venue->update(['verified_items' => $items]);
+    }
+
+    /** Approve this venue so it becomes visible and bookable — only once fully verified. */
     public function approve(): void
     {
+        if (! $this->venue->isFullyVerified()) {
+            return; // gated: every verification item must be ticked first
+        }
+
         $this->venue->update(['approved_at' => now()]);
     }
 
     public function render()
     {
-        $this->venue->load(['owner', 'courts' => fn ($q) => $q->orderBy('name'), 'photos']);
+        $this->venue->load(['owner', 'courts' => fn ($q) => $q->orderBy('name'), 'photos', 'documents']);
 
         // Price range across all active slots (not gated on bookable, so admins
         // can review pricing even before the venue is approved).
@@ -39,6 +59,8 @@ class VenueShow extends Component
         return view('livewire.admin.venue-show', [
             'subscription' => $this->venue->owner->subscription($this->venue->subscriptionType()),
             'priceRange' => $prices->isEmpty() ? null : ['min' => (float) $prices->min(), 'max' => (float) $prices->max()],
+            'verificationItems' => config('courtgo.verification'),
+            'documents' => $this->venue->documents->groupBy('type'),
         ]);
     }
 }

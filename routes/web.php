@@ -55,6 +55,8 @@ Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->grou
     Route::post('/venues/{venue}/media/layout', [\App\Http\Controllers\Owner\VenueMediaController::class, 'storeLayout'])->name('venues.media.layout');
     Route::post('/venues/{venue}/media/photos', [\App\Http\Controllers\Owner\VenueMediaController::class, 'storePhoto'])->name('venues.media.photos.store');
     Route::delete('/venues/{venue}/media/photos/{photo}', [\App\Http\Controllers\Owner\VenueMediaController::class, 'destroyPhoto'])->name('venues.media.photos.destroy');
+    Route::post('/venues/{venue}/documents', [\App\Http\Controllers\Owner\VenueDocumentController::class, 'store'])->name('venues.documents.store');
+    Route::delete('/venues/{venue}/documents/{document}', [\App\Http\Controllers\Owner\VenueDocumentController::class, 'destroy'])->name('venues.documents.destroy');
     Route::get('/venues/{venue}', \App\Livewire\Owner\Venues\Courts::class)->name('venues.courts');
     Route::get('/courts/{court}/schedule', \App\Livewire\Owner\Courts\Schedule::class)->name('courts.schedule');
 
@@ -77,6 +79,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/venues', \App\Livewire\Admin\Venues::class)->name('venues');
     Route::get('/venues/{venue}', \App\Livewire\Admin\VenueShow::class)->name('venues.show');
 });
+
+// View a venue verification document — the venue's owner or an admin only.
+// Documents live on the private disk, so this authorized route is the only way in.
+Route::get('/venue-documents/{document}', [\App\Http\Controllers\Owner\VenueDocumentController::class, 'show'])
+    ->middleware('auth')->name('venue-documents.show');
 
 Route::get('/auth/google/redirect', [GoogleController::class, 'redirect'])->name('google.redirect');
 Route::get('/auth/google/callback', [GoogleController::class, 'callback'])->name('google.callback');

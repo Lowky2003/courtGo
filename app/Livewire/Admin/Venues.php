@@ -16,6 +16,12 @@ class Venues extends Component
     {
         $venue = Venue::findOrFail($venueId);
 
+        // Gated: a venue can only be approved once every verification item is
+        // ticked (done on the venue detail page).
+        if (! $venue->isFullyVerified()) {
+            return;
+        }
+
         $venue->update(['approved_at' => now()]);
     }
 
