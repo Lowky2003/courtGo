@@ -33,7 +33,7 @@ class DashboardTest extends TestCase
         $this->get(route('dashboard'))
             ->assertOk()
             ->assertSee('My Venues')
-            ->assertSee('subscribe each venue');
+            ->assertSee('Add your first venue'); // no venues yet → prompt to add one
     }
 
     public function test_connected_owner_with_an_unsubscribed_venue_is_still_warned(): void
@@ -44,7 +44,8 @@ class DashboardTest extends TestCase
 
         $this->get(route('dashboard'))
             ->assertOk()
-            ->assertSee('subscribe each venue');
+            ->assertSee('Get your courts live')
+            ->assertSee('Subscribe each venue'); // the still-incomplete step
     }
 
     public function test_admin_dashboard_renders(): void

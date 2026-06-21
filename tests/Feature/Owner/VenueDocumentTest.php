@@ -113,7 +113,8 @@ test('the owner dashboard tells them to upload verification documents to go live
 
     $this->actingAs($venue->owner)->get('/dashboard')
         ->assertOk()
-        ->assertSee('Upload your verification documents to go live');
+        ->assertSee('Get your courts live')
+        ->assertSee('Upload documents'); // the go-live checklist step CTA
 });
 
 test('uploading a document does not flash a success message (stays at the item)', function () {
