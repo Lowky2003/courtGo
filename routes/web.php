@@ -52,6 +52,7 @@ Route::middleware(['auth', \App\Http\Middleware\RedirectOwnersToDashboard::class
 Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->group(function () {
     Route::redirect('/', '/owner/venues')->name('home');
     Route::get('/venues', \App\Livewire\Owner\Venues\Index::class)->name('venues.index');
+    Route::get('/bookings', \App\Livewire\Owner\Bookings::class)->name('bookings');
     Route::get('/venues/{venue}/photo', [\App\Http\Controllers\Owner\VenuePhotoController::class, 'edit'])->name('venues.photo.edit');
     Route::post('/venues/{venue}/photo', [\App\Http\Controllers\Owner\VenuePhotoController::class, 'update'])->name('venues.photo.update');
     Route::get('/venues/{venue}/profile', \App\Livewire\Owner\Venues\Profile::class)->name('venues.profile');

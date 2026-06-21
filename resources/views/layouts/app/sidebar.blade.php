@@ -22,6 +22,9 @@
                         <flux:sidebar.item icon="building-storefront" :href="route('owner.venues.index')" :current="request()->routeIs('owner.venues.*')" wire:navigate>
                             {{ __('My Venues') }}
                         </flux:sidebar.item>
+                        <flux:sidebar.item icon="calendar-days" :href="route('owner.bookings')" :current="request()->routeIs('owner.bookings')" wire:navigate>
+                            {{ __('Bookings') }}
+                        </flux:sidebar.item>
                         <flux:sidebar.item icon="credit-card" :href="route('owner.billing')" :current="request()->routeIs('owner.billing')" wire:navigate>
                             {{ __('Billing') }}
                         </flux:sidebar.item>
