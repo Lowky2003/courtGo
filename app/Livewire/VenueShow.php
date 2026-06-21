@@ -105,7 +105,7 @@ class VenueShow extends Component
         if (config('cashier.secret')) {
             return redirect()->away($payments->checkoutUrlForBookings(
                 $created,
-                route('bookings.cart.success'),
+                route('bookings.cart.success').'?session_id={CHECKOUT_SESSION_ID}',
                 route('bookings.cart.cancel', ['bookings' => collect($created)->pluck('id')->implode(',')]),
             ));
         }

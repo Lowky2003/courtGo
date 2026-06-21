@@ -18,6 +18,38 @@ function checkoutCompleted(int $bookingId, string $paymentStatus = 'paid'): arra
     ];
 }
 
+test('confirmPaidSession confirms a paid session (the post-checkout return path)', function () {
+    $booking = Booking::factory()->pending()->create();
+
+    app(\App\Services\BookingPaymentService::class)->confirmPaidSession([
+        'id' => 'cs_test_456',
+        'payment_status' => 'paid',
+        'payment_intent' => 'pi_test_456',
+        'metadata' => ['booking_ids' => (string) $booking->id],
+    ]);
+
+    $fresh = $booking->fresh();
+    expect($fresh->status)->toBe(BookingStatus::Confirmed)
+        ->and($fresh->payment_status)->toBe('paid');
+});
+
+test('confirmPaidSession does nothing while the session is unpaid', function () {
+    $booking = Booking::factory()->pending()->create();
+
+    app(\App\Services\BookingPaymentService::class)->confirmPaidSession([
+        'id' => 'cs', 'payment_status' => 'unpaid', 'metadata' => ['booking_ids' => (string) $booking->id],
+    ]);
+
+    expect($booking->fresh()->status)->toBe(BookingStatus::Pending);
+});
+
+test('the booking success return redirects to my bookings (no error without stripe)', function () {
+    $booking = Booking::factory()->pending()->create();
+
+    $this->actingAs($booking->customer)->get(route('bookings.success', $booking))
+        ->assertRedirect(route('bookings.mine'));
+});
+
 test('it confirms a booking on checkout.session.completed', function () {
     $booking = Booking::factory()->pending()->create();
 

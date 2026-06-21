@@ -2,13 +2,17 @@
 
 namespace App\Services;
 
+use App\Enums\BookingStatus;
 use App\Models\Booking;
+use App\Notifications\BookingConfirmed;
 use Laravel\Cashier\Cashier;
 
 /**
  * Creates the Stripe Checkout session for a booking — a DESTINATION CHARGE that
  * sends the money to the court owner's connected account (0% platform fee, so
- * application_fee_amount is omitted). Calls Stripe, so it's exercised manually.
+ * application_fee_amount is omitted). Also confirms bookings from a paid Checkout
+ * session (used by both the Stripe webhook and the post-Checkout return page, so
+ * payment confirms even in local dev where the webhook can't reach the app).
  */
 class BookingPaymentService
 {
@@ -61,5 +65,112 @@ class BookingPaymentService
         $bookings->each(fn (Booking $booking) => $booking->update(['stripe_checkout_session_id' => $session->id]));
 
         return $session->url;
+    }
+
+    /**
+     * Confirm every booking paid for by a completed Checkout session (idempotent),
+     * and email the customer for the ones newly confirmed. Safe to call from the
+     * webhook and the return page — whichever arrives first wins.
+     *
+     * @param  array<string, mixed>  $session  a Stripe Checkout Session as an array
+     */
+    public function confirmPaidSession(array $session): void
+    {
+        if (($session['payment_status'] ?? 'unpaid') === 'unpaid') {
+            return; // async method (FPX/GrabPay) not settled yet
+        }
+
+        $raw = $session['metadata']['booking_ids'] ?? ($session['metadata']['booking_id'] ?? '');
+        $bookingIds = array_filter(array_map('intval', explode(',', (string) $raw)));
+
+        // Only the slots newly confirmed in THIS call get an email (a Stripe retry
+        // or the webhook+return both running won't re-email already-confirmed ones).
+        $confirmed = [];
+        foreach ($bookingIds as $id) {
+            if ($booking = $this->confirm($id, $session)) {
+                $confirmed[] = $booking;
+            }
+        }
+
+        BookingConfirmed::dispatchFor(collect($confirmed));
+    }
+
+    /** Release still-pending holds (payment failed or the session expired). */
+    public function releaseBookings(array $bookingIds): void
+    {
+        Booking::query()
+            ->whereIn('id', $bookingIds)
+            ->where('status', BookingStatus::Pending->value)
+            ->update(['status' => BookingStatus::Cancelled->value]);
+    }
+
+    /**
+     * Confirm one booking (idempotent). Returns the booking only when this call
+     * newly confirmed it; null if already confirmed or refunded.
+     *
+     * @param  array<string, mixed>  $session
+     */
+    private function confirm(int $bookingId, array $session): ?Booking
+    {
+        $booking = Booking::query()->whereKey($bookingId)->first();
+
+        if (! $booking || $booking->status === BookingStatus::Confirmed) {
+            return null;
+        }
+
+        // Edge case: the customer paid right as their hold expired and another active
+        // booking grabbed this slot meanwhile. Don't double-book — refund instead.
+        $slotTaken = Booking::query()
+            ->where('court_id', $booking->court_id)
+            ->whereDate('booking_date', $booking->booking_date->toDateString())
+            ->where('start_time', $booking->start_time)
+            ->whereKeyNot($booking->id)
+            ->where(function ($q) {
+                $q->where('status', BookingStatus::Confirmed->value)
+                    ->orWhere(fn ($p) => $p->where('status', BookingStatus::Pending->value)
+                        ->where('hold_expires_at', '>', now()));
+            })
+            ->exists();
+
+        if ($slotTaken) {
+            $this->refund($session);
+            $booking->update([
+                'status' => BookingStatus::Cancelled,
+                'payment_status' => 'refunded',
+                'stripe_payment_intent_id' => $session['payment_intent'] ?? null,
+                'processed_at' => now(),
+            ]);
+
+            return null;
+        }
+
+        $booking->update([
+            'status' => BookingStatus::Confirmed,
+            'payment_status' => 'paid',
+            'stripe_checkout_session_id' => $session['id'] ?? $booking->stripe_checkout_session_id,
+            'stripe_payment_intent_id' => $session['payment_intent'] ?? null,
+            'processed_at' => now(),
+        ]);
+
+        return $booking;
+    }
+
+    /** Refund a payment for a booking we can't honour (slot was taken). */
+    private function refund(array $session): void
+    {
+        $paymentIntent = $session['payment_intent'] ?? null;
+
+        if (! $paymentIntent || ! config('cashier.secret')) {
+            return;
+        }
+
+        try {
+            Cashier::stripe()->refunds->create([
+                'payment_intent' => $paymentIntent,
+                'reverse_transfer' => true,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 }

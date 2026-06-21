@@ -93,9 +93,11 @@ class BookingController extends Controller
         return redirect()->route('bookings.success', $booking)->with('demo_paid', true);
     }
 
-    /** Return URL after a combined (multi-slot) payment — the webhook confirms the bookings. */
-    public function cartSuccess()
+    /** Return URL after a combined (multi-slot) payment — confirm straight from the session. */
+    public function cartSuccess(Request $request, BookingPaymentService $payments)
     {
+        $this->confirmFromReturn($request, $payments);
+
         return redirect()->route('bookings.mine')->with('booking_confirmed', true);
     }
 
@@ -113,11 +115,34 @@ class BookingController extends Controller
         return redirect()->route('bookings.mine')->with('booking_error', 'Payment was cancelled.');
     }
 
-    public function success(Booking $booking)
+    public function success(Request $request, Booking $booking, BookingPaymentService $payments)
     {
         abort_unless($booking->customer_id === auth()->id(), 403);
 
+        $this->confirmFromReturn($request, $payments);
+
         return redirect()->route('bookings.mine')->with('booking_confirmed', true);
+    }
+
+    /**
+     * Confirm the booking(s) directly from the completed Checkout session when the
+     * customer returns — so payment shows even in local dev where Stripe's webhook
+     * can't reach the app. Idempotent with the webhook.
+     */
+    private function confirmFromReturn(Request $request, BookingPaymentService $payments): void
+    {
+        $sessionId = $request->query('session_id');
+
+        if (! $sessionId || ! config('cashier.secret')) {
+            return;
+        }
+
+        try {
+            $session = \Laravel\Cashier\Cashier::stripe()->checkout->sessions->retrieve($sessionId);
+            $payments->confirmPaidSession($session->toArray());
+        } catch (\Throwable $e) {
+            report($e); // never break the return page on a Stripe hiccup
+        }
     }
 
     public function cancel(Booking $booking)
