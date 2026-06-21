@@ -90,7 +90,16 @@ class BillingController extends Controller
             return redirect()->route('owner.billing');
         }
 
-        return $request->user()->redirectToBillingPortal(route('owner.billing'));
+        try {
+            return $request->user()->redirectToBillingPortal(route('owner.billing'));
+        } catch (\Throwable $e) {
+            report($e);
+
+            return redirect()->route('owner.billing')->with(
+                'stripe_error',
+                "Couldn't open the Stripe billing portal. In test mode you have to enable it once: Stripe Dashboard → Settings → Billing → Customer portal → Activate."
+            );
+        }
     }
 
     /** Send the owner to Stripe Connect onboarding to connect their bank. */

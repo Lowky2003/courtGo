@@ -36,7 +36,7 @@
                         <div class="flex items-center gap-2">
                             @if ($subscribed)
                                 <flux:badge color="green" size="sm">Subscribed</flux:badge>
-                                <flux:button size="sm" variant="ghost" :href="route('owner.billing.portal')" wire:navigate>Manage</flux:button>
+                                <flux:button size="sm" variant="ghost" href="{{ route('owner.billing.portal') }}">Manage</flux:button>
                             @else
                                 <flux:badge color="zinc" size="sm">Not subscribed</flux:badge>
                                 <flux:button size="sm" variant="primary" href="{{ route('owner.billing.subscribe', $venue) }}">Subscribe</flux:button>
