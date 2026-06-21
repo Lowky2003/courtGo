@@ -4,6 +4,11 @@
         <flux:text>Subscribe each venue and connect your bank so your courts can go live for booking.</flux:text>
     </div>
 
+    @if (session('status'))
+        <flux:callout variant="success" icon="check-circle">
+            <flux:callout.text>{{ session('status') }}</flux:callout.text>
+        </flux:callout>
+    @endif
     @if (session('stripe_error'))
         <flux:callout variant="danger" icon="exclamation-triangle">
             <flux:callout.text>{{ session('stripe_error') }}</flux:callout.text>

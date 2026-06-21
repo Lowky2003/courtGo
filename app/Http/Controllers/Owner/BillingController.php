@@ -37,9 +37,50 @@ class BillingController extends Controller
         }
 
         return $user->newSubscription($venue->subscriptionType(), $priceId)->checkout([
-            'success_url' => route('owner.billing').'?checkout=success',
+            'success_url' => route('owner.billing.subscribed', $venue).'?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => route('owner.billing').'?checkout=cancel',
         ]);
+    }
+
+    /**
+     * Owner returns from a successful Checkout. Record the subscription straight
+     * from the completed session so it shows immediately — even in local dev
+     * where Stripe's webhook can't reach the app. Idempotent with the webhook.
+     */
+    public function subscribed(Request $request, Venue $venue)
+    {
+        abort_unless($venue->owner_id === $request->user()->id, 403);
+
+        $user = $request->user();
+        $sessionId = $request->query('session_id');
+
+        if ($sessionId && $this->stripeConfigured() && ! $user->subscribed($venue->subscriptionType())) {
+            try {
+                $session = \Laravel\Cashier\Cashier::stripe()->checkout->sessions->retrieve($sessionId);
+
+                if ($session->subscription
+                    && ! $user->subscriptions()->where('stripe_id', $session->subscription)->exists()) {
+                    $stripeSub = \Laravel\Cashier\Cashier::stripe()->subscriptions->retrieve($session->subscription);
+
+                    $user->subscriptions()->create([
+                        'type' => $venue->subscriptionType(),
+                        'stripe_id' => $stripeSub->id,
+                        'stripe_status' => $stripeSub->status,
+                        'stripe_price' => $stripeSub->items->data[0]->price->id ?? null,
+                        'quantity' => $stripeSub->items->data[0]->quantity ?? 1,
+                        'ends_at' => null,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                report($e); // don't break the return page if Stripe is unreachable
+            }
+        }
+
+        $status = $user->subscribed($venue->subscriptionType())
+            ? $venue->name.' is now subscribed.'
+            : 'Thanks! Your subscription is being activated — refresh in a moment if it isn\'t shown yet.';
+
+        return redirect()->route('owner.billing')->with('status', $status);
     }
 
     /** Open Stripe's billing portal to manage/cancel the subscription. */

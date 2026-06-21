@@ -60,6 +60,24 @@ test('an owner cannot subscribe another owners venue', function () {
         ->assertForbidden();
 });
 
+test('the checkout return route redirects to billing', function () {
+    config()->set('cashier.secret', null); // no Stripe → no sync, just redirect
+    $venue = Venue::factory()->create();
+
+    $this->actingAs($venue->owner)
+        ->get(route('owner.billing.subscribed', $venue))
+        ->assertRedirect(route('owner.billing'));
+});
+
+test('an owner cannot hit another owners checkout return', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->create(); // someone else's venue
+
+    $this->actingAs($owner)
+        ->get(route('owner.billing.subscribed', $venue))
+        ->assertForbidden();
+});
+
 test('connecting a bank without stripe configured redirects back safely', function () {
     config()->set('cashier.secret', null);
     $owner = User::factory()->create(['role' => UserRole::Owner]);
