@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Owner;
 
 use App\Http\Controllers\Controller;
+use App\Models\Venue;
 use App\Services\StripeConnectService;
 use Illuminate\Http\Request;
 
@@ -14,9 +15,11 @@ class BillingController extends Controller
         return (bool) config('cashier.secret');
     }
 
-    /** Start (or change) the monthly subscription via Stripe Checkout. */
-    public function subscribe(Request $request)
+    /** Start the monthly subscription for ONE venue via Stripe Checkout. */
+    public function subscribe(Request $request, Venue $venue)
     {
+        abort_unless($venue->owner_id === $request->user()->id, 403);
+
         $user = $request->user();
         $priceId = config('services.stripe.price_id');
 
@@ -27,7 +30,7 @@ class BillingController extends Controller
             );
         }
 
-        return $user->newSubscription('default', $priceId)->checkout([
+        return $user->newSubscription($venue->subscriptionType(), $priceId)->checkout([
             'success_url' => route('owner.billing').'?checkout=success',
             'cancel_url' => route('owner.billing').'?checkout=cancel',
         ]);

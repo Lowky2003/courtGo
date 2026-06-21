@@ -17,12 +17,7 @@ use Livewire\Livewire;
 /** A live venue with two courts, each having one session on $date. */
 function liveTwoCourtVenue(Carbon $date): array
 {
-    $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
-    $owner->subscriptions()->create([
-        'type' => 'default', 'stripe_id' => 'sub_'.uniqid(), 'stripe_status' => 'active',
-        'stripe_price' => 'price_test', 'quantity' => 1,
-    ]);
-    $venue = Venue::factory()->for($owner, 'owner')->create();
+    $venue = Venue::factory()->subscribed()->create();
     // Same sport so both courts share one grid (the venue page shows one sport at a time).
     $courtA = Court::factory()->for($venue)->create(['is_active' => true, 'name' => 'Court A', 'sport' => 'Badminton']);
     $courtB = Court::factory()->for($venue)->create(['is_active' => true, 'name' => 'Court B', 'sport' => 'Badminton']);
@@ -35,15 +30,7 @@ function liveTwoCourtVenue(Carbon $date): array
 /** A session on a court whose owner is live (subscribed + Connect-onboarded). */
 function liveCourtSession(Carbon $date): SessionTemplate
 {
-    $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
-    $owner->subscriptions()->create([
-        'type' => 'default',
-        'stripe_id' => 'sub_'.uniqid(),
-        'stripe_status' => 'active',
-        'stripe_price' => 'price_test',
-        'quantity' => 1,
-    ]);
-    $venue = Venue::factory()->for($owner, 'owner')->create(['city' => 'Subang Jaya']);
+    $venue = Venue::factory()->subscribed()->create(['city' => 'Subang Jaya']);
     $court = Court::factory()->for($venue)->create(['is_active' => true, 'sport' => 'Badminton']);
 
     return SessionTemplate::factory()->for($court)->create([
@@ -114,12 +101,7 @@ test('time slots that have already started today are hidden, not shown as booked
     Carbon::setTestNow(Carbon::parse('2026-07-06 14:00:00')); // Monday, 2pm
     $date = Carbon::parse('2026-07-06');
 
-    $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
-    $owner->subscriptions()->create([
-        'type' => 'default', 'stripe_id' => 'sub_'.uniqid(), 'stripe_status' => 'active',
-        'stripe_price' => 'price_test', 'quantity' => 1,
-    ]);
-    $venue = Venue::factory()->for($owner, 'owner')->create();
+    $venue = Venue::factory()->subscribed()->create();
     $court = Court::factory()->for($venue)->create(['is_active' => true]);
     SessionTemplate::factory()->for($court)->create(['day_of_week' => $date->dayOfWeek, 'start_time' => '10:00', 'end_time' => '11:00', 'price' => 8]); // past
     SessionTemplate::factory()->for($court)->create(['day_of_week' => $date->dayOfWeek, 'start_time' => '16:00', 'end_time' => '17:00', 'price' => 8]); // future
@@ -176,12 +158,7 @@ test('booking slots on one court leaves the other courts available in the grid',
     config()->set('cashier.secret', null); // demo confirms
     $date = Carbon::parse('2026-07-06');
 
-    $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
-    $owner->subscriptions()->create([
-        'type' => 'default', 'stripe_id' => 'sub_'.uniqid(), 'stripe_status' => 'active',
-        'stripe_price' => 'price_test', 'quantity' => 1,
-    ]);
-    $venue = Venue::factory()->for($owner, 'owner')->create();
+    $venue = Venue::factory()->subscribed()->create();
     $courtA = Court::factory()->for($venue)->create(['is_active' => true, 'name' => 'Court A', 'sport' => 'Badminton']);
     $courtB = Court::factory()->for($venue)->create(['is_active' => true, 'name' => 'Court B', 'sport' => 'Badminton']);
     foreach ([$courtA, $courtB] as $court) {

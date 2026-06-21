@@ -7,21 +7,6 @@ use App\Models\User;
 use App\Models\Venue;
 use Livewire\Livewire;
 
-/** A subscribed + Connect-onboarded owner (billing-ready, so only venue approval gates them). */
-function approvalLiveOwner(): User
-{
-    $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
-    $owner->subscriptions()->create([
-        'type' => 'default',
-        'stripe_id' => 'sub_'.uniqid(),
-        'stripe_status' => 'active',
-        'stripe_price' => 'price_test',
-        'quantity' => 1,
-    ]);
-
-    return $owner;
-}
-
 test('a customer cannot open the admin venues page', function () {
     $customer = User::factory()->create();
 
@@ -48,12 +33,13 @@ test('pending venues are listed before approved ones', function () {
 
 test('approving one venue makes its courts bookable while the owners other pending venue stays hidden', function () {
     $admin = User::factory()->create(['role' => UserRole::Admin]);
-    $owner = approvalLiveOwner();
+    $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
 
-    $approved = Venue::factory()->pending()->for($owner, 'owner')->create();
+    // Both venues pending + subscribed, so admin approval is the only difference.
+    $approved = Venue::factory()->pending()->for($owner, 'owner')->subscribed()->create();
     Court::factory()->for($approved)->create(['is_active' => true]);
 
-    $stillPending = Venue::factory()->pending()->for($owner, 'owner')->create();
+    $stillPending = Venue::factory()->pending()->for($owner, 'owner')->subscribed()->create();
     Court::factory()->for($stillPending)->create(['is_active' => true]);
 
     Livewire::actingAs($admin)->test(Venues::class)->call('approve', $approved->id);

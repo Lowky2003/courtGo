@@ -60,7 +60,7 @@ Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->grou
 
     // Billing (subscription) + payouts (Stripe Connect)
     Route::get('/billing', \App\Livewire\Owner\Billing::class)->name('billing');
-    Route::get('/billing/subscribe', [BillingController::class, 'subscribe'])->name('billing.subscribe');
+    Route::get('/billing/subscribe/{venue}', [BillingController::class, 'subscribe'])->name('billing.subscribe');
     Route::get('/billing/portal', [BillingController::class, 'billingPortal'])->name('billing.portal');
     Route::get('/connect', [BillingController::class, 'connect'])->name('connect.redirect');
     Route::get('/connect/return', [BillingController::class, 'connectReturn'])->name('connect.return');

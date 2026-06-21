@@ -83,16 +83,14 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
-     * Owner-level readiness to be paid for bookings: an active subscription AND
-     * completed Stripe Connect onboarding (so payouts can reach them), and not
-     * suspended. Whether a customer can actually see/book a venue ALSO requires
-     * that venue to be admin-approved — see Venue::isApproved() / Court::scopeBookable().
+     * Owner-level readiness to be paid: not suspended AND Connect-onboarded (so
+     * payouts can reach them). The monthly subscription is now PER VENUE, so a
+     * venue is only bookable when it is also admin-approved and has its own
+     * active subscription — see Venue::isSubscribed() / Court::scopeBookable().
      */
     public function canAcceptBookings(): bool
     {
-        return ! $this->is_suspended
-            && $this->subscribed('default')
-            && $this->connect_onboarded;
+        return ! $this->is_suspended && $this->connect_onboarded;
     }
 
     /**

@@ -24,13 +24,8 @@ test('the venue page shows amenities, gallery, and directions', function () {
 });
 
 test('the venue page shows opening hours, price range, announcement, policy and contact', function () {
-    // A live owner so the price range (which only counts bookable slots) shows.
-    $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
-    $owner->subscriptions()->create([
-        'type' => 'default', 'stripe_id' => 'sub_'.uniqid(),
-        'stripe_status' => 'active', 'stripe_price' => 'price_test', 'quantity' => 1,
-    ]);
-    $venue = Venue::factory()->for($owner, 'owner')->create([
+    // A subscribed venue so the price range (which only counts bookable slots) shows.
+    $venue = Venue::factory()->subscribed()->create([
         'announcement' => 'Open house this weekend', 'announcement_active' => true,
         'opening_hours' => [1 => ['closed' => false, 'open' => '08:00', 'close' => '22:00']],
         'pricing_note' => 'Peak RM45', 'policy' => 'No smoking',

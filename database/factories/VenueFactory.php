@@ -41,4 +41,23 @@ class VenueFactory extends Factory
             'approved_at' => null,
         ]);
     }
+
+    /**
+     * A fully live venue: its owner is Connect-onboarded and the venue has its
+     * own active subscription (one subscription per venue).
+     */
+    public function subscribed(): static
+    {
+        return $this->afterCreating(function (Venue $venue) {
+            $venue->owner->update(['connect_onboarded' => true]);
+
+            $venue->owner->subscriptions()->create([
+                'type' => $venue->subscriptionType(),
+                'stripe_id' => 'sub_'.uniqid(),
+                'stripe_status' => 'active',
+                'stripe_price' => 'price_test',
+                'quantity' => 1,
+            ]);
+        });
+    }
 }

@@ -13,15 +13,7 @@ use Illuminate\Support\Carbon;
 /** A session on a court whose owner is subscribed + Connect-onboarded (so it's bookable). */
 function liveSession(Carbon $date): SessionTemplate
 {
-    $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
-    $owner->subscriptions()->create([
-        'type' => 'default',
-        'stripe_id' => 'sub_'.uniqid(),
-        'stripe_status' => 'active',
-        'stripe_price' => 'price_test',
-        'quantity' => 1,
-    ]);
-    $venue = Venue::factory()->for($owner, 'owner')->create();
+    $venue = Venue::factory()->subscribed()->create();
     $court = Court::factory()->for($venue)->create(['is_active' => true]);
 
     return SessionTemplate::factory()->for($court)->create([
@@ -83,15 +75,9 @@ test('reserving a court that is not live throws SlotUnavailable', function () {
 
 test('reserving a court in a pending venue throws SlotUnavailable even with a live owner', function () {
     $date = Carbon::parse('2026-07-06');
-    $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
-    $owner->subscriptions()->create([
-        'type' => 'default',
-        'stripe_id' => 'sub_'.uniqid(),
-        'stripe_status' => 'active',
-        'stripe_price' => 'price_test',
-        'quantity' => 1,
-    ]);
-    $venue = Venue::factory()->pending()->for($owner, 'owner')->create(); // awaiting admin approval
+    // Subscribed + onboarded, but the venue is still awaiting admin approval, so
+    // approval is the only thing blocking it.
+    $venue = Venue::factory()->pending()->subscribed()->create();
     $court = Court::factory()->for($venue)->create(['is_active' => true]);
     $session = SessionTemplate::factory()->for($court)->create([
         'day_of_week' => $date->dayOfWeek, 'start_time' => '09:00', 'end_time' => '11:00',

@@ -177,6 +177,18 @@ class Venue extends Model
         return ! is_null($this->approved_at);
     }
 
+    /** The owner's Cashier subscription name for THIS venue (one sub per venue). */
+    public function subscriptionType(): string
+    {
+        return 'venue:'.$this->id;
+    }
+
+    /** Whether this venue has its own active (or trialing) subscription. */
+    public function isSubscribed(): bool
+    {
+        return $this->owner->subscribed($this->subscriptionType());
+    }
+
     /**
      * Limit to venues an admin has approved.
      */

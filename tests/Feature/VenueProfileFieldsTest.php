@@ -12,13 +12,7 @@ use Livewire\Livewire;
 /** A live, bookable venue (approved venue + subscribed + Connect-onboarded owner). */
 function profileLiveVenue(): Venue
 {
-    $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
-    $owner->subscriptions()->create([
-        'type' => 'default', 'stripe_id' => 'sub_'.uniqid(),
-        'stripe_status' => 'active', 'stripe_price' => 'price_test', 'quantity' => 1,
-    ]);
-
-    return Venue::factory()->for($owner, 'owner')->create();
+    return Venue::factory()->subscribed()->create();
 }
 
 test('price range is the min and max of active, bookable slot prices', function () {

@@ -3,6 +3,7 @@
 use App\Enums\UserRole;
 use App\Livewire\Owner\Billing;
 use App\Models\User;
+use App\Models\Venue;
 use Livewire\Livewire;
 
 test('the billing page renders for an owner', function () {
@@ -31,13 +32,22 @@ test('an owner can save their business registration number', function () {
     expect($owner->fresh()->business_registration_number)->toBe('BRN-998877');
 });
 
-test('subscribing without stripe configured redirects back safely', function () {
+test('subscribing a venue without stripe configured redirects back safely', function () {
     config()->set('cashier.secret', null);
     config()->set('services.stripe.price_id', null);
     $owner = User::factory()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->for($owner, 'owner')->create();
 
-    $this->actingAs($owner)->get('/owner/billing/subscribe')
+    $this->actingAs($owner)->get(route('owner.billing.subscribe', $venue))
         ->assertRedirect(route('owner.billing'));
+});
+
+test('an owner cannot subscribe another owners venue', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->create(); // someone else's venue
+
+    $this->actingAs($owner)->get(route('owner.billing.subscribe', $venue))
+        ->assertForbidden();
 });
 
 test('connecting a bank without stripe configured redirects back safely', function () {

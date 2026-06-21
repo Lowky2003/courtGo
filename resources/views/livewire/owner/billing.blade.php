@@ -1,21 +1,8 @@
 <div class="space-y-8 p-6 max-w-3xl mx-auto w-full">
     <div class="space-y-1">
         <flux:heading size="xl">Billing &amp; Payouts</flux:heading>
-        <flux:text>Subscribe and connect your bank so your courts can go live for booking.</flux:text>
+        <flux:text>Subscribe each venue and connect your bank so your courts can go live for booking.</flux:text>
     </div>
-
-    {{-- Go-live status banner --}}
-    @if ($canAcceptBookings)
-        <div class="rounded-xl border border-green-300 bg-green-50 dark:bg-green-900/30 dark:border-green-800 p-4">
-            <flux:heading size="lg">✅ Your courts are live!</flux:heading>
-            <flux:text>You're subscribed and your bank is connected. Customers can book and pay you.</flux:text>
-        </div>
-    @else
-        <div class="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-900/30 dark:border-amber-800 p-4">
-            <flux:heading size="lg">⚠️ Your courts aren't live yet</flux:heading>
-            <flux:text>Finish both steps below so customers can book your courts.</flux:text>
-        </div>
-    @endif
 
     @if (session('stripe_error'))
         <flux:callout variant="danger" icon="exclamation-triangle">
@@ -23,25 +10,40 @@
         </flux:callout>
     @endif
 
-    {{-- Step 1: Subscription --}}
+    {{-- Step 1: a subscription per venue --}}
     <div class="space-y-3 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
-        <div class="flex items-center justify-between">
-            <flux:heading size="lg">1. Monthly subscription</flux:heading>
-            @if ($subscribed)
-                <flux:badge color="green">Active</flux:badge>
-            @else
-                <flux:badge color="zinc">Not subscribed</flux:badge>
-            @endif
-        </div>
-        <flux:text>A monthly plan to list your courts on CourtGo.</flux:text>
-        @if ($subscribed)
-            <flux:button variant="ghost" :href="route('owner.billing.portal')" wire:navigate>Manage subscription</flux:button>
+        <flux:heading size="lg">1. Venue subscriptions</flux:heading>
+        <flux:text>Each venue needs its own monthly plan to be listed on CourtGo.</flux:text>
+
+        @if ($venues->isEmpty())
+            <flux:text class="text-zinc-400">
+                Add a venue first in <a class="underline" href="{{ route('owner.venues.index') }}" wire:navigate>My Venues</a>.
+            </flux:text>
         @else
-            <flux:button variant="primary" href="{{ route('owner.billing.subscribe') }}">Subscribe now</flux:button>
+            <div class="divide-y divide-zinc-100 dark:divide-zinc-800">
+                @foreach ($venues as $venue)
+                    @php($subscribed = auth()->user()->subscribed($venue->subscriptionType()))
+                    <div class="flex flex-wrap items-center justify-between gap-3 py-3" wire:key="vsub-{{ $venue->id }}">
+                        <div>
+                            <div class="font-medium">{{ $venue->name }}</div>
+                            <div class="text-sm text-zinc-500">{{ $venue->city }}, {{ $venue->state }}</div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            @if ($subscribed)
+                                <flux:badge color="green" size="sm">Subscribed</flux:badge>
+                                <flux:button size="sm" variant="ghost" :href="route('owner.billing.portal')" wire:navigate>Manage</flux:button>
+                            @else
+                                <flux:badge color="zinc" size="sm">Not subscribed</flux:badge>
+                                <flux:button size="sm" variant="primary" href="{{ route('owner.billing.subscribe', $venue) }}">Subscribe</flux:button>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
         @endif
     </div>
 
-    {{-- Step 2: Bank / payouts (Stripe Connect) --}}
+    {{-- Step 2: connect your bank once (payouts for all venues) --}}
     <div class="space-y-4 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
         <div class="flex items-center justify-between">
             <flux:heading size="lg">2. Connect your bank (payouts)</flux:heading>
@@ -51,7 +53,7 @@
                 <flux:badge color="zinc">Not connected</flux:badge>
             @endif
         </div>
-        <flux:text>Booking money goes straight to your bank. Stripe handles the verification — we never see your bank details.</flux:text>
+        <flux:text>Connect once — booking money for all your venues goes to your bank. Stripe handles the verification; we never see your bank details.</flux:text>
 
         <form wire:submit="saveBrn" class="space-y-3">
             <flux:input wire:model="business_registration_number" label="Business Registration Number (BRN)" placeholder="e.g. 202301234567" description="Required by Stripe for FPX (Malaysian online banking) payouts." />

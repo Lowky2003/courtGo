@@ -10,15 +10,7 @@ use Illuminate\Support\Carbon;
 /** A live venue (subscribed + Connect-onboarded owner) with one priced session on $date's weekday. */
 function browseLiveVenue(Carbon $date, float $price = 40): Venue
 {
-    $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
-    $owner->subscriptions()->create([
-        'type' => 'default',
-        'stripe_id' => 'sub_'.uniqid(),
-        'stripe_status' => 'active',
-        'stripe_price' => 'price_test',
-        'quantity' => 1,
-    ]);
-    $venue = Venue::factory()->for($owner, 'owner')->create(['name' => 'Smash Arena', 'city' => 'Subang Jaya']);
+    $venue = Venue::factory()->subscribed()->create(['name' => 'Smash Arena', 'city' => 'Subang Jaya']);
     $court = Court::factory()->for($venue)->create(['is_active' => true, 'sport' => 'Badminton']);
     SessionTemplate::factory()->for($court)->create([
         'day_of_week' => $date->dayOfWeek, 'start_time' => '09:00', 'end_time' => '11:00', 'price' => $price,

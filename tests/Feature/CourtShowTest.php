@@ -7,21 +7,6 @@ use App\Models\User;
 use App\Models\Venue;
 use Illuminate\Support\Carbon;
 
-/** A subscribed + Connect-onboarded owner (billing-ready, so only venue approval gates them). */
-function courtShowLiveOwner(): User
-{
-    $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
-    $owner->subscriptions()->create([
-        'type' => 'default',
-        'stripe_id' => 'sub_'.uniqid(),
-        'stripe_status' => 'active',
-        'stripe_price' => 'price_test',
-        'quantity' => 1,
-    ]);
-
-    return $owner;
-}
-
 /** A court with one session on tomorrow's weekday (the date CourtShow defaults to). */
 function courtShowCourtIn(Venue $venue): Court
 {
@@ -37,7 +22,7 @@ function courtShowCourtIn(Venue $venue): Court
 }
 
 test('a court in an approved live venue shows bookable sessions', function () {
-    $venue = Venue::factory()->for(courtShowLiveOwner(), 'owner')->create(); // approved by default
+    $venue = Venue::factory()->subscribed()->create(); // approved + subscribed
     $court = courtShowCourtIn($venue);
 
     $this->actingAs(User::factory()->create())
@@ -47,7 +32,7 @@ test('a court in an approved live venue shows bookable sessions', function () {
 });
 
 test('a court in a pending venue shows a not-open notice and no book button', function () {
-    $venue = Venue::factory()->pending()->for(courtShowLiveOwner(), 'owner')->create();
+    $venue = Venue::factory()->pending()->subscribed()->create();
     $court = courtShowCourtIn($venue);
 
     $this->actingAs(User::factory()->create())

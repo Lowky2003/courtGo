@@ -44,29 +44,41 @@ class Court extends Model
 
     /**
      * A court can be booked only when it is active, its venue has been approved
-     * by an admin, AND its owner is able to accept bookings (active subscription
-     * + completed Connect onboarding).
+     * by an admin, its owner is payout-ready (not suspended + Connect-onboarded),
+     * AND the venue has its own active subscription.
      */
     public function isBookable(): bool
     {
         return $this->is_active
             && $this->venue->isApproved()
-            && $this->venue->owner->canAcceptBookings();
+            && $this->venue->owner->canAcceptBookings()
+            && $this->venue->isSubscribed();
     }
 
     /**
      * Limit to courts customers can actually book: active, in an admin-approved
-     * venue, with a live owner (Connect-onboarded + an active/trialing subscription).
+     * venue whose owner is payout-ready and which has its own active/trialing
+     * subscription (one subscription per venue, typed "venue:{id}").
      */
     public function scopeBookable($query)
     {
-        return $query->where('is_active', true)
-            ->whereHas('venue', fn ($venue) => $venue->whereNotNull('approved_at'))
-            ->whereHas('venue.owner', function ($owner) {
-                $owner->where('is_suspended', false)
-                    ->where('connect_onboarded', true)
-                    ->whereHas('subscriptions', function ($sub) {
-                        $sub->where('type', 'default')->whereIn('stripe_status', ['active', 'trialing']);
+        // The subscription type encodes the venue id, so the EXISTS subquery must
+        // compare against "venue:" + the venue's id (concat differs per driver).
+        $driver = $query->getConnection()->getDriverName();
+        $venueType = $driver === 'mysql'
+            ? "CONCAT('venue:', venues.id)"
+            : "('venue:' || venues.id)";
+
+        return $query->where('courts.is_active', true)
+            ->whereHas('venue', function ($venue) use ($venueType) {
+                $venue->whereNotNull('approved_at')
+                    ->whereHas('owner', fn ($owner) => $owner->where('is_suspended', false)->where('connect_onboarded', true))
+                    ->whereExists(function ($sub) use ($venueType) {
+                        $sub->select(\Illuminate\Support\Facades\DB::raw(1))
+                            ->from('subscriptions')
+                            ->whereColumn('subscriptions.user_id', 'venues.owner_id')
+                            ->whereRaw("subscriptions.type = $venueType")
+                            ->whereIn('subscriptions.stripe_status', ['active', 'trialing']);
                     });
             });
     }

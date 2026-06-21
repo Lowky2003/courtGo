@@ -8,22 +8,13 @@ use App\Models\User;
 use App\Models\Venue;
 use Livewire\Livewire;
 
-function subscribedOnboardedOwner(array $extra = []): User
+/** A Connect-onboarded owner (the per-venue subscription lives on the venue now). */
+function onboardedOwner(array $extra = []): User
 {
-    $owner = User::factory()->create(array_merge([
+    return User::factory()->create(array_merge([
         'role' => UserRole::Owner,
         'connect_onboarded' => true,
     ], $extra));
-
-    $owner->subscriptions()->create([
-        'type' => 'default',
-        'stripe_id' => 'sub_'.uniqid(),
-        'stripe_status' => 'active',
-        'stripe_price' => 'price_test',
-        'quantity' => 1,
-    ]);
-
-    return $owner;
 }
 
 test('the admin dashboard renders for an admin', function () {
@@ -61,14 +52,15 @@ test('an admin can suspend and unsuspend an owner', function () {
 });
 
 test('a suspended owner cannot accept bookings', function () {
-    $owner = subscribedOnboardedOwner(['is_suspended' => true]);
+    $owner = onboardedOwner(['is_suspended' => true]);
 
     expect($owner->fresh()->canAcceptBookings())->toBeFalse();
 });
 
 test('a suspended owners courts are not bookable', function () {
-    $owner = subscribedOnboardedOwner(['is_suspended' => true]);
-    $venue = Venue::factory()->for($owner, 'owner')->create();
+    // Otherwise fully live (approved + subscribed), so suspension is the only blocker.
+    $venue = Venue::factory()->subscribed()->create();
+    $venue->owner->update(['is_suspended' => true]);
     Court::factory()->for($venue)->create(['is_active' => true]);
 
     expect(Court::bookable()->count())->toBe(0);

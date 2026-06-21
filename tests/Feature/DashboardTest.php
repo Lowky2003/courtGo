@@ -32,7 +32,7 @@ class DashboardTest extends TestCase
         $this->get(route('dashboard'))
             ->assertOk()
             ->assertSee('My Venues')
-            ->assertSee('Finish your subscription');
+            ->assertSee('subscribe each venue');
     }
 
     public function test_admin_dashboard_renders(): void

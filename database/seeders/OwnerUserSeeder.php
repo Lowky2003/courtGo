@@ -27,17 +27,6 @@ class OwnerUserSeeder extends Seeder
             ],
         );
 
-        // Demo: a fake active subscription so canAcceptBookings() is true.
-        if ($owner->subscriptions()->doesntExist()) {
-            $owner->subscriptions()->create([
-                'type' => 'default',
-                'stripe_id' => 'sub_demo_'.$owner->id,
-                'stripe_status' => 'active',
-                'stripe_price' => 'price_demo',
-                'quantity' => 1,
-            ]);
-        }
-
         // Give the demo owner a sample venue with a few courts (only if they have none yet).
         if ($owner->venues()->doesntExist()) {
             $venue = Venue::create([
@@ -57,6 +46,20 @@ class OwnerUserSeeder extends Seeder
                     'name' => $name,
                     'sport' => 'Badminton',
                     'is_active' => true,
+                ]);
+            }
+        }
+
+        // Demo: each venue has its own active subscription (one per venue) so its
+        // courts are bookable without real Stripe.
+        foreach ($owner->venues as $venue) {
+            if ($owner->subscriptions()->where('type', $venue->subscriptionType())->doesntExist()) {
+                $owner->subscriptions()->create([
+                    'type' => $venue->subscriptionType(),
+                    'stripe_id' => 'sub_demo_'.$venue->id,
+                    'stripe_status' => 'active',
+                    'stripe_price' => 'price_demo',
+                    'quantity' => 1,
                 ]);
             }
         }

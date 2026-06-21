@@ -12,13 +12,7 @@ use Livewire\Livewire;
 /** A live, admin-approved venue (subscribed + Connect-onboarded owner). */
 function multiSportVenue(): Venue
 {
-    $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
-    $owner->subscriptions()->create([
-        'type' => 'default', 'stripe_id' => 'sub_'.uniqid(),
-        'stripe_status' => 'active', 'stripe_price' => 'price_test', 'quantity' => 1,
-    ]);
-
-    return Venue::factory()->for($owner, 'owner')->create();
+    return Venue::factory()->subscribed()->create();
 }
 
 test('a multi-sport venue shows one sport at a time and can switch', function () {

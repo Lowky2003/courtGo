@@ -14,12 +14,7 @@ use Illuminate\Support\Facades\Notification;
 /** A bookable session (live owner + admin-approved venue). */
 function notifyBookableSession(Carbon $date): SessionTemplate
 {
-    $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
-    $owner->subscriptions()->create([
-        'type' => 'default', 'stripe_id' => 'sub_'.uniqid(),
-        'stripe_status' => 'active', 'stripe_price' => 'price_test', 'quantity' => 1,
-    ]);
-    $venue = Venue::factory()->for($owner, 'owner')->create();
+    $venue = Venue::factory()->subscribed()->create();
     $court = Court::factory()->for($venue)->create(['is_active' => true]);
 
     return SessionTemplate::factory()->for($court)->create([

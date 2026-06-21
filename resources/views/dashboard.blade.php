@@ -34,7 +34,7 @@
                 <flux:callout variant="warning" icon="exclamation-triangle">
                     <flux:callout.text>
                         <strong>Your courts aren't live yet.</strong>
-                        Finish your subscription and connect your bank in
+                        Connect your bank and subscribe each venue in
                         <a class="underline" href="{{ route('owner.billing') }}">Billing</a> so customers can book.
                     </flux:callout.text>
                 </flux:callout>

@@ -33,9 +33,8 @@ class Billing extends Component
         $user = auth()->user();
 
         return view('livewire.owner.billing', [
-            'subscribed' => $user->subscribed('default'),
+            'venues' => $user->venues()->orderBy('name')->get(),
             'onboarded' => (bool) $user->connect_onboarded,
-            'canAcceptBookings' => $user->canAcceptBookings(),
         ]);
     }
 }
