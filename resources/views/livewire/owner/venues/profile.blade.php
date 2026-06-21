@@ -26,7 +26,15 @@
         </div>
 
         {{-- Make the consequence unmistakable --}}
-        @if ($venue->hasAllDocuments())
+        @if ($venue->isRejected())
+            <flux:callout variant="danger" icon="x-circle">
+                <flux:callout.heading>Your venue was not approved</flux:callout.heading>
+                <flux:callout.text>
+                    <strong>Reason:</strong> {{ $venue->rejection_reason }}<br>
+                    Please fix this and re-upload the relevant document below — your venue goes back for review automatically.
+                </flux:callout.text>
+            </flux:callout>
+        @elseif ($venue->hasAllDocuments())
             <flux:callout variant="warning" icon="clock">
                 <flux:callout.text>All documents uploaded — waiting for the CourtGo admin to review and approve. Your courts go live once approved.</flux:callout.text>
             </flux:callout>

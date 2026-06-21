@@ -116,6 +116,66 @@ test('the owner dashboard tells them to upload verification documents to go live
         ->assertSee('Upload your verification documents to go live');
 });
 
+test('a rejected venue shows the reason to the owner on the profile', function () {
+    $venue = Venue::factory()->pending()->create([
+        'rejected_at' => now(),
+        'rejection_reason' => 'Your tenancy agreement is not stamped.',
+    ]);
+
+    $this->actingAs($venue->owner)->get(route('owner.venues.profile', $venue))
+        ->assertOk()
+        ->assertSee('Your venue was not approved')
+        ->assertSee('Your tenancy agreement is not stamped.');
+});
+
+test('a rejected venue shows a Rejected status on My Venues', function () {
+    $venue = Venue::factory()->pending()->create([
+        'rejected_at' => now(),
+        'rejection_reason' => 'Please re-upload a clearer SSM document.',
+    ]);
+
+    $this->actingAs($venue->owner)->get(route('owner.venues.index'))
+        ->assertOk()
+        ->assertSee('Rejected');
+});
+
+test('re-uploading a document after rejection puts the venue back to pending and un-verifies the item', function () {
+    Storage::fake('local');
+    $venue = Venue::factory()->pending()->create([
+        'rejected_at' => now(),
+        'rejection_reason' => 'SSM expired.',
+        'verified_items' => ['ssm', 'right_to_occupy'],
+    ]);
+
+    $this->actingAs($venue->owner)->post(route('owner.venues.documents.store', $venue), [
+        'type' => 'ssm',
+        'document' => UploadedFile::fake()->create('ssm-new.pdf', 40, 'application/pdf'),
+    ])->assertRedirect();
+
+    $venue->refresh();
+    expect($venue->isRejected())->toBeFalse()                 // back in the review queue
+        ->and($venue->rejection_reason)->toBeNull()
+        ->and($venue->isItemVerified('ssm'))->toBeFalse()      // the re-uploaded item must be re-checked
+        ->and($venue->isItemVerified('right_to_occupy'))->toBeTrue(); // untouched item stays verified
+});
+
+test('re-uploading on an approved venue does not change its approval or verification', function () {
+    Storage::fake('local');
+    $venue = Venue::factory()->verified()->create(); // approved (default) + all items verified
+
+    expect($venue->isApproved())->toBeTrue()
+        ->and($venue->isFullyVerified())->toBeTrue();
+
+    $this->actingAs($venue->owner)->post(route('owner.venues.documents.store', $venue), [
+        'type' => 'ssm',
+        'document' => UploadedFile::fake()->create('ssm.pdf', 20, 'application/pdf'),
+    ])->assertRedirect();
+
+    $venue->refresh();
+    expect($venue->isApproved())->toBeTrue()        // stays live
+        ->and($venue->isFullyVerified())->toBeTrue(); // invariant preserved
+});
+
 test('the verification section shows while pending and is hidden once approved', function () {
     $owner = User::factory()->create(['role' => UserRole::Owner]);
 

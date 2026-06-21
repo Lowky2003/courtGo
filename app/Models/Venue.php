@@ -37,12 +37,15 @@ class Venue extends Model
         'contact_facebook',
         'layout_image_path',
         'verified_items',
+        'rejected_at',
+        'rejection_reason',
     ];
 
     protected function casts(): array
     {
         return [
             'approved_at' => 'datetime',
+            'rejected_at' => 'datetime',
             'amenities' => 'array',
             'announcement_active' => 'boolean',
             'announcement_until' => 'date',
@@ -229,6 +232,43 @@ class Venue extends Model
     public function isApproved(): bool
     {
         return ! is_null($this->approved_at);
+    }
+
+    /**
+     * Whether an admin rejected this venue (and it hasn't since been approved).
+     */
+    public function isRejected(): bool
+    {
+        return ! is_null($this->rejected_at) && is_null($this->approved_at);
+    }
+
+    /**
+     * Approve the venue (clearing any prior rejection) and email the owner.
+     */
+    public function approveByAdmin(): void
+    {
+        $this->update([
+            'approved_at' => now(),
+            'rejected_at' => null,
+            'rejection_reason' => null,
+        ]);
+
+        // A mail failure must never break the approval itself.
+        rescue(fn () => $this->owner->notify(new \App\Notifications\VenueApproved($this)), report: true);
+    }
+
+    /**
+     * Reject the venue with a reason shown to the owner, and email them.
+     */
+    public function rejectByAdmin(string $reason): void
+    {
+        $this->update([
+            'approved_at' => null,
+            'rejected_at' => now(),
+            'rejection_reason' => $reason,
+        ]);
+
+        rescue(fn () => $this->owner->notify(new \App\Notifications\VenueRejected($this)), report: true);
     }
 
     /** The owner's Cashier subscription name for THIS venue (one sub per venue). */

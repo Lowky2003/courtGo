@@ -9,6 +9,8 @@
             <div class="flex flex-wrap gap-2 pt-1">
                 @if ($venue->isApproved())
                     <flux:badge color="green" size="sm">Approved</flux:badge>
+                @elseif ($venue->isRejected())
+                    <flux:badge color="red" size="sm">Rejected</flux:badge>
                 @else
                     <flux:badge color="amber" size="sm">Pending approval</flux:badge>
                 @endif
@@ -26,17 +28,41 @@
         </div>
 
         @unless ($venue->isApproved())
-            <div class="text-right">
-                <flux:button variant="primary" wire:click="approve" :disabled="! $venue->isFullyVerified()"
-                    wire:confirm="Approve this venue? Customers will be able to find and book it.">
-                    Approve venue
-                </flux:button>
+            <div class="text-right space-y-2">
+                <div class="flex flex-wrap justify-end gap-2">
+                    <flux:button variant="primary" wire:click="approve" :disabled="! $venue->isFullyVerified()"
+                        wire:confirm="Approve this venue? Customers will be able to find and book it.">
+                        Approve venue
+                    </flux:button>
+                    <flux:button variant="danger" wire:click="startReject">Reject</flux:button>
+                </div>
                 @unless ($venue->isFullyVerified())
-                    <flux:text class="mt-1 text-xs text-zinc-500">Verify all {{ count($verificationItems) }} items below first ({{ $venue->verifiedCount() }}/{{ count($verificationItems) }} done).</flux:text>
+                    <flux:text class="text-xs text-zinc-500">Verify all {{ count($verificationItems) }} items below first ({{ $venue->verifiedCount() }}/{{ count($verificationItems) }} done).</flux:text>
                 @endunless
             </div>
         @endunless
     </div>
+
+    {{-- The current rejection reason (so the admin remembers what they told the owner) --}}
+    @if ($venue->isRejected() && ! $rejecting)
+        <flux:callout variant="danger" icon="x-circle">
+            <flux:callout.heading>This venue was rejected</flux:callout.heading>
+            <flux:callout.text>Reason sent to the owner: {{ $venue->rejection_reason }}</flux:callout.text>
+        </flux:callout>
+    @endif
+
+    {{-- Reject-with-reason box --}}
+    @if ($rejecting)
+        <div class="rounded-xl border border-red-200 bg-red-50 p-5 space-y-3 dark:border-red-900 dark:bg-red-950/30">
+            <flux:heading size="lg">Reject this venue</flux:heading>
+            <flux:textarea wire:model="rejectionReason" label="Reason (emailed to and shown to the owner)"
+                placeholder="e.g. The SSM certificate is expired — please upload a current one." rows="3" />
+            <div class="flex gap-2">
+                <flux:button variant="danger" wire:click="reject" wire:confirm="Reject this venue and email the owner the reason?">Confirm rejection</flux:button>
+                <flux:button variant="ghost" wire:click="cancelReject">Cancel</flux:button>
+            </div>
+        </div>
+    @endif
 
     {{-- Verification checklist: tick each item (after checking the document) to unlock approval --}}
     @unless ($venue->isApproved())

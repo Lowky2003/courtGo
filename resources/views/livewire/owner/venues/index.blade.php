@@ -61,6 +61,10 @@
                                 <td class="px-4 py-3">
                                     @if ($venue->isApproved())
                                         <flux:badge color="green" size="sm">Approved</flux:badge>
+                                    @elseif ($venue->isRejected())
+                                        <a href="{{ route('owner.venues.profile', $venue) }}#verification" wire:navigate class="inline-block">
+                                            <flux:badge color="red" size="sm">Rejected — see reason</flux:badge>
+                                        </a>
                                     @elseif (! $venue->hasAllDocuments())
                                         <a href="{{ route('owner.venues.profile', $venue) }}#verification" wire:navigate class="inline-block">
                                             <flux:badge color="red" size="sm">Upload documents</flux:badge>

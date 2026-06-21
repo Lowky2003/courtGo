@@ -5,6 +5,9 @@ use App\Livewire\Admin\VenueShow;
 use App\Models\Court;
 use App\Models\User;
 use App\Models\Venue;
+use App\Notifications\VenueApproved;
+use App\Notifications\VenueRejected;
+use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 
 test('an admin can open a venue and see its information', function () {
@@ -64,6 +67,94 @@ test('a venue cannot be approved until every verification item is ticked', funct
         ->call('approve');
 
     expect($venue->fresh()->isApproved())->toBeTrue();
+});
+
+test('approving a venue emails the owner', function () {
+    Notification::fake();
+    $venue = Venue::factory()->pending()->verified()->create();
+    $admin = User::factory()->create(['role' => UserRole::Admin]);
+
+    Livewire::actingAs($admin)->test(VenueShow::class, ['venue' => $venue])->call('approve');
+
+    expect($venue->fresh()->isApproved())->toBeTrue();
+    Notification::assertSentTo($venue->owner, VenueApproved::class);
+});
+
+test('an admin can reject a venue with a reason that is emailed to the owner', function () {
+    Notification::fake();
+    $venue = Venue::factory()->pending()->create();
+    $admin = User::factory()->create(['role' => UserRole::Admin]);
+
+    Livewire::actingAs($admin)->test(VenueShow::class, ['venue' => $venue])
+        ->call('startReject')
+        ->set('rejectionReason', 'The SSM certificate has expired — please upload a current one.')
+        ->call('reject')
+        ->assertHasNoErrors();
+
+    $venue->refresh();
+    expect($venue->isRejected())->toBeTrue()
+        ->and($venue->rejection_reason)->toContain('SSM certificate has expired');
+    Notification::assertSentTo($venue->owner, VenueRejected::class);
+});
+
+test('a non-admin cannot run admin venue actions over livewire', function () {
+    $venue = Venue::factory()->pending()->verified()->create();
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+
+    // The role middleware only guards the page load; the component must re-check.
+    Livewire::actingAs($owner)
+        ->test(VenueShow::class, ['venue' => $venue])
+        ->assertForbidden();
+});
+
+test('a whitespace-only rejection reason is rejected', function () {
+    Notification::fake();
+    $venue = Venue::factory()->pending()->create();
+    $admin = User::factory()->create(['role' => UserRole::Admin]);
+
+    Livewire::actingAs($admin)->test(VenueShow::class, ['venue' => $venue])
+        ->set('rejectionReason', '       ')
+        ->call('reject')
+        ->assertHasErrors('rejectionReason');
+
+    expect($venue->fresh()->isRejected())->toBeFalse();
+    Notification::assertNothingSent();
+});
+
+test('the venue approval and rejection emails build without error', function () {
+    $venue = Venue::factory()->create(['rejection_reason' => 'Needs a clearer SSM document.']);
+
+    expect((new VenueApproved($venue))->toMail($venue->owner))
+        ->toBeInstanceOf(\Illuminate\Notifications\Messages\MailMessage::class);
+    expect((new VenueRejected($venue))->toMail($venue->owner))
+        ->toBeInstanceOf(\Illuminate\Notifications\Messages\MailMessage::class);
+});
+
+test('rejecting requires a reason', function () {
+    Notification::fake();
+    $venue = Venue::factory()->pending()->create();
+    $admin = User::factory()->create(['role' => UserRole::Admin]);
+
+    Livewire::actingAs($admin)->test(VenueShow::class, ['venue' => $venue])
+        ->set('rejectionReason', '')
+        ->call('reject')
+        ->assertHasErrors('rejectionReason');
+
+    expect($venue->fresh()->isRejected())->toBeFalse();
+    Notification::assertNothingSent();
+});
+
+test('approving a previously rejected venue clears the rejection', function () {
+    Notification::fake();
+    $venue = Venue::factory()->pending()->verified()->create(['rejected_at' => now(), 'rejection_reason' => 'old reason']);
+    $admin = User::factory()->create(['role' => UserRole::Admin]);
+
+    Livewire::actingAs($admin)->test(VenueShow::class, ['venue' => $venue])->call('approve');
+
+    $venue->refresh();
+    expect($venue->isApproved())->toBeTrue()
+        ->and($venue->isRejected())->toBeFalse()
+        ->and($venue->rejection_reason)->toBeNull();
 });
 
 test('an admin cannot mark an item verified when the owner uploaded no document', function () {

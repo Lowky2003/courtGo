@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Enums\UserRole;
+use App\Livewire\Concerns\AdminOnly;
 use App\Models\User;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -12,6 +13,8 @@ use Livewire\Component;
 #[Title('Manage Owners')]
 class Owners extends Component
 {
+    use AdminOnly;
+
     public function toggleSuspend(int $userId): void
     {
         $owner = User::where('role', UserRole::Owner->value)->findOrFail($userId);

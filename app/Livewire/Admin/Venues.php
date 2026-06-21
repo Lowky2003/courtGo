@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Livewire\Concerns\AdminOnly;
 use App\Models\Venue;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -11,6 +12,8 @@ use Livewire\Component;
 #[Title('Approve Venues')]
 class Venues extends Component
 {
+    use AdminOnly;
+
     /** Approve a venue so it becomes visible and bookable to customers. */
     public function approve(int $venueId): void
     {
@@ -22,7 +25,7 @@ class Venues extends Component
             return;
         }
 
-        $venue->update(['approved_at' => now()]);
+        $venue->approveByAdmin();
     }
 
     public function render()

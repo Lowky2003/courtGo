@@ -34,14 +34,37 @@ class VenueDocumentController extends Controller
         ]);
 
         $file = $request->file('document');
+        $type = $validated['type'];
 
         $venue->documents()->create([
-            'type' => $validated['type'],
+            'type' => $type,
             'path' => $file->store('venue-documents/'.$venue->id, 'local'),
             'original_name' => $file->getClientOriginalName(),
         ]);
 
-        return back()->with('status', config("courtgo.verification.{$validated['type']}.label").' uploaded.');
+        // Only touch verification/approval state while the venue is NOT approved —
+        // never silently de-verify a live venue (keeps "approved ⇒ fully verified").
+        if (! $venue->isApproved()) {
+            $updates = [];
+
+            // A new/replacement document means the admin should re-check that item.
+            $verified = $venue->verified_items ?? [];
+            if (in_array($type, $verified, true)) {
+                $updates['verified_items'] = array_values(array_diff($verified, [$type]));
+            }
+
+            // Re-uploading after a rejection puts the venue back in the review queue.
+            if ($venue->rejected_at) {
+                $updates['rejected_at'] = null;
+                $updates['rejection_reason'] = null;
+            }
+
+            if ($updates) {
+                $venue->update($updates);
+            }
+        }
+
+        return back()->with('status', config("courtgo.verification.{$type}.label").' uploaded.');
     }
 
     /** Owner removes one of their uploaded documents. */

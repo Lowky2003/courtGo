@@ -4,6 +4,7 @@ namespace App\Livewire\Admin;
 
 use App\Enums\BookingStatus;
 use App\Enums\UserRole;
+use App\Livewire\Concerns\AdminOnly;
 use App\Models\Booking;
 use App\Models\Court;
 use App\Models\User;
@@ -17,6 +18,8 @@ use Livewire\Component;
 #[Title('Admin Dashboard')]
 class Dashboard extends Component
 {
+    use AdminOnly;
+
     public function render()
     {
         return view('livewire.admin.dashboard', [
