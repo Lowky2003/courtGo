@@ -16,7 +16,7 @@
          right. Stacks back to a single top-down column on small screens. --}}
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
         {{-- LEFT: venue details (sticks while the calendar on the right scrolls) --}}
-        <div class="space-y-5 lg:sticky lg:top-6">
+        <div class="space-y-5 lg:sticky lg:top-20">
             {{-- Header: name, location, and quick facts at a glance --}}
             @php($range = $venue->priceRange())
             <div class="space-y-3">

@@ -2,8 +2,8 @@
      (Find a Court, My Bookings). Role-aware: customers get browse + bookings
      links, owners/admins get a dashboard link; everyone gets a profile menu.
      Guests get For owners / Log in / Get started. --}}
-<header class="border-b border-zinc-200 dark:border-zinc-800">
-    <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+<header class="sticky top-0 z-40 border-b border-zinc-200 bg-white/80 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/80">
+    <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
         <a href="{{ route('home') }}" class="flex items-center gap-2 text-lg font-semibold">
             <span class="flex size-8 items-center justify-center rounded-md bg-blue-600 text-white">
                 <flux:icon name="map-pin" variant="solid" class="size-5" />
