@@ -20,7 +20,7 @@
                     @foreach ($venues as $venue)
                         <tr wire:key="venue-{{ $venue->id }}">
                             <td class="px-4 py-3">
-                                <div class="font-medium">{{ $venue->name }}</div>
+                                <a href="{{ route('admin.venues.show', $venue) }}" wire:navigate class="font-medium text-blue-600 hover:underline dark:text-blue-400">{{ $venue->name }}</a>
                                 <div class="text-zinc-500">{{ $venue->city }}, {{ $venue->state }}</div>
                             </td>
                             <td class="px-4 py-3">
@@ -36,11 +36,14 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-right">
-                                @unless ($venue->isApproved())
-                                    <flux:button size="sm" variant="primary" wire:click="approve({{ $venue->id }})" wire:confirm="Approve this venue? Customers will be able to find and book it.">
-                                        Approve
-                                    </flux:button>
-                                @endunless
+                                <div class="flex items-center justify-end gap-2">
+                                    <flux:button size="sm" variant="ghost" :href="route('admin.venues.show', $venue)" wire:navigate>View</flux:button>
+                                    @unless ($venue->isApproved())
+                                        <flux:button size="sm" variant="primary" wire:click="approve({{ $venue->id }})" wire:confirm="Approve this venue? Customers will be able to find and book it.">
+                                            Approve
+                                        </flux:button>
+                                    @endunless
+                                </div>
                             </td>
                         </tr>
                     @endforeach
