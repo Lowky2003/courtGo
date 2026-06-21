@@ -40,6 +40,22 @@ class VenueMediaController extends Controller
         return back()->with('status', 'Cover photo updated.');
     }
 
+    /** Replace the venue's layout (floor-plan) image. */
+    public function storeLayout(Request $request, Venue $venue)
+    {
+        $this->authorize('update', $venue);
+
+        $request->validate(['photo' => self::PHOTO_RULES]);
+
+        if ($venue->layout_image_path) {
+            Storage::disk('public')->delete($venue->layout_image_path);
+        }
+
+        $venue->update(['layout_image_path' => $request->file('photo')->store('venues/layout', 'public')]);
+
+        return back()->with('status', 'Venue layout updated.');
+    }
+
     public function storePhoto(Request $request, Venue $venue)
     {
         $this->authorize('update', $venue);

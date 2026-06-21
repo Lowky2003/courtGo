@@ -23,6 +23,19 @@ class Venue extends Model
         'image_path',
         'approved_at',
         'amenities',
+        'announcement',
+        'announcement_active',
+        'announcement_until',
+        'opening_hours',
+        'pricing_note',
+        'policy',
+        'contact_phone',
+        'contact_whatsapp',
+        'contact_email',
+        'contact_website',
+        'contact_instagram',
+        'contact_facebook',
+        'layout_image_path',
     ];
 
     protected function casts(): array
@@ -30,6 +43,9 @@ class Venue extends Model
         return [
             'approved_at' => 'datetime',
             'amenities' => 'array',
+            'announcement_active' => 'boolean',
+            'announcement_until' => 'date',
+            'opening_hours' => 'array',
         ];
     }
 
@@ -39,8 +55,10 @@ class Venue extends Model
     protected static function booted(): void
     {
         static::deleting(function (Venue $venue) {
-            if ($venue->image_path) {
-                Storage::disk('public')->delete($venue->image_path);
+            foreach ([$venue->image_path, $venue->layout_image_path] as $path) {
+                if ($path) {
+                    Storage::disk('public')->delete($path);
+                }
             }
 
             // Remove gallery files (the DB cascade deletes the rows, not the files).
@@ -49,13 +67,54 @@ class Venue extends Model
     }
 
     /**
-     * Public URL of the venue's image, or null if it has none.
+     * Public URL of the venue's cover image, or null if it has none.
      */
     public function imageUrl(): ?string
     {
         return $this->image_path
             ? Storage::disk('public')->url($this->image_path)
             : null;
+    }
+
+    /**
+     * Public URL of the venue's layout (floor-plan) image, or null if it has none.
+     */
+    public function layoutImageUrl(): ?string
+    {
+        return $this->layout_image_path
+            ? Storage::disk('public')->url($this->layout_image_path)
+            : null;
+    }
+
+    /**
+     * Whether the announcement should be shown to customers: it's switched on,
+     * has text, and hasn't passed its optional "hide after" date.
+     */
+    public function announcementVisible(): bool
+    {
+        return $this->announcement_active
+            && filled($this->announcement)
+            && (is_null($this->announcement_until) || ! today()->gt($this->announcement_until));
+    }
+
+    /**
+     * The cheapest and dearest active slot price across this venue's courts,
+     * or null when there are no priced slots yet.
+     *
+     * @return array{min: float, max: float}|null
+     */
+    public function priceRange(): ?array
+    {
+        $prices = SessionTemplate::query()
+            ->whereHas('court', fn ($q) => $q->where('venue_id', $this->id))
+            ->where('is_active', true)
+            ->pluck('price');
+
+        if ($prices->isEmpty()) {
+            return null;
+        }
+
+        return ['min' => (float) $prices->min(), 'max' => (float) $prices->max()];
     }
 
     /**

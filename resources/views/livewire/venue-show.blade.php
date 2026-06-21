@@ -1,6 +1,12 @@
 <div class="p-6 max-w-6xl mx-auto w-full space-y-4">
     <flux:button size="sm" variant="ghost" :href="route('courts.browse')" wire:navigate icon="arrow-left">Back to search</flux:button>
 
+    @if ($venue->announcementVisible())
+        <flux:callout variant="warning" icon="megaphone">
+            <flux:callout.text>{{ $venue->announcement }}</flux:callout.text>
+        </flux:callout>
+    @endif
+
     {{-- Two columns on large screens: venue details on the left, booking on the
          right. Stacks back to a single top-down column on small screens. --}}
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
@@ -42,6 +48,82 @@
 
             {{-- Directions --}}
             <x-venue-directions :venue="$venue" />
+
+            {{-- Opening hours --}}
+            @if ($venue->opening_hours)
+                <div class="space-y-1 text-sm">
+                    <flux:text class="font-medium">Opening hours</flux:text>
+                    @foreach (config('courtgo.weekdays') as $dow => $label)
+                        @php($h = $venue->opening_hours[$dow] ?? null)
+                        <div class="flex justify-between gap-4">
+                            <span class="text-zinc-500">{{ $label }}</span>
+                            <span>
+                                @if ($h && empty($h['closed']) && ! empty($h['open']) && ! empty($h['close']))
+                                    {{ \Illuminate\Support\Carbon::parse($h['open'])->format('g:i A') }} – {{ \Illuminate\Support\Carbon::parse($h['close'])->format('g:i A') }}
+                                @else
+                                    Closed
+                                @endif
+                            </span>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
+            {{-- Pricing --}}
+            @php($range = $venue->priceRange())
+            @if ($range)
+                <div class="text-sm">
+                    <flux:text class="font-medium">Pricing</flux:text>
+                    <div>RM {{ number_format($range['min'], 0) }}@if ($range['max'] != $range['min']) – RM {{ number_format($range['max'], 0) }}@endif <span class="text-zinc-400">per slot</span></div>
+                    @if ($venue->pricing_note)
+                        <div class="text-zinc-500">{{ $venue->pricing_note }}</div>
+                    @endif
+                </div>
+            @endif
+
+            {{-- Policy --}}
+            @if ($venue->policy)
+                <div class="text-sm">
+                    <flux:text class="font-medium">Policy</flux:text>
+                    <div class="whitespace-pre-line text-zinc-500">{{ $venue->policy }}</div>
+                </div>
+            @endif
+
+            {{-- Contact --}}
+            @php($hasContact = $venue->contact_phone || $venue->contact_whatsapp || $venue->contact_email || $venue->contact_website || $venue->contact_instagram || $venue->contact_facebook)
+            @if ($hasContact)
+                <div class="space-y-1 text-sm [&_a]:text-blue-600 dark:[&_a]:text-blue-400 [&_a]:hover:underline">
+                    <flux:text class="font-medium">Contact</flux:text>
+                    @if ($venue->contact_phone)
+                        <div><a href="tel:{{ $venue->contact_phone }}">📞 {{ $venue->contact_phone }}</a></div>
+                    @endif
+                    @if ($venue->contact_whatsapp)
+                        <div><a href="https://wa.me/{{ preg_replace('/\D/', '', $venue->contact_whatsapp) }}" target="_blank" rel="noopener noreferrer">WhatsApp</a></div>
+                    @endif
+                    @if ($venue->contact_email)
+                        <div><a href="mailto:{{ $venue->contact_email }}">✉️ {{ $venue->contact_email }}</a></div>
+                    @endif
+                    @if ($venue->contact_website)
+                        <div><a href="{{ $venue->contact_website }}" target="_blank" rel="noopener noreferrer">Website</a></div>
+                    @endif
+                    @if ($venue->contact_instagram)
+                        <div><a href="{{ \Illuminate\Support\Str::startsWith($venue->contact_instagram, 'http') ? $venue->contact_instagram : 'https://instagram.com/'.ltrim($venue->contact_instagram, '@') }}" target="_blank" rel="noopener noreferrer">Instagram</a></div>
+                    @endif
+                    @if ($venue->contact_facebook)
+                        <div><a href="{{ \Illuminate\Support\Str::startsWith($venue->contact_facebook, 'http') ? $venue->contact_facebook : 'https://facebook.com/'.$venue->contact_facebook }}" target="_blank" rel="noopener noreferrer">Facebook</a></div>
+                    @endif
+                </div>
+            @endif
+
+            {{-- Venue layout --}}
+            @if ($venue->layoutImageUrl())
+                <div class="text-sm">
+                    <flux:text class="font-medium">Venue layout</flux:text>
+                    <a href="{{ $venue->layoutImageUrl() }}" target="_blank" rel="noopener noreferrer">
+                        <img src="{{ $venue->layoutImageUrl() }}" alt="" class="mt-1 max-h-48 w-full rounded-lg object-contain" />
+                    </a>
+                </div>
+            @endif
         </div>
 
         {{-- RIGHT: choose a sport, date and time. min-w-0 lets this 2/3 track

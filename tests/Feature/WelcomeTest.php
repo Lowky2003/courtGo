@@ -42,10 +42,8 @@ class WelcomeTest extends TestCase
             ->assertSee('Log out')          // profile dropdown in the shared header
             ->assertDontSee('Go to dashboard');
 
-        // An owner/admin still gets the dashboard link.
+        // An owner is kept in their sidebar area — redirected away from the public homepage.
         $this->actingAs(User::factory()->create(['role' => UserRole::Owner]));
-        $this->get(route('home'))
-            ->assertOk()
-            ->assertSee('Go to dashboard');
+        $this->get(route('home'))->assertRedirect(route('dashboard'));
     }
 }

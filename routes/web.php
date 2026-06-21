@@ -13,7 +13,7 @@ Route::get('/', function () {
         'popularSports' => collect(config('courtgo.popular_sports')),
         'states' => collect(config('courtgo.states')),
     ]);
-})->name('home');
+})->middleware(\App\Http\Middleware\RedirectOwnersToDashboard::class)->name('home');
 
 // Public "for owners" marketing page (funnels into owner registration).
 Route::view('/for-business', 'for-business')->name('for-business');
@@ -29,8 +29,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 });
 
-// Customer: browse, book & pay, my bookings
-Route::middleware('auth')->group(function () {
+// Customer: browse, book & pay, my bookings (owners are kept in their sidebar area)
+Route::middleware(['auth', \App\Http\Middleware\RedirectOwnersToDashboard::class])->group(function () {
     Route::get('/courts', \App\Livewire\Browse::class)->name('courts.browse');
     Route::get('/venues/{venue}', \App\Livewire\VenueShow::class)->name('venues.show');
     Route::get('/courts/{court}', \App\Livewire\CourtShow::class)->name('courts.show');
@@ -52,6 +52,7 @@ Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->grou
     Route::post('/venues/{venue}/photo', [\App\Http\Controllers\Owner\VenuePhotoController::class, 'update'])->name('venues.photo.update');
     Route::get('/venues/{venue}/profile', \App\Livewire\Owner\Venues\Profile::class)->name('venues.profile');
     Route::post('/venues/{venue}/media/cover', [\App\Http\Controllers\Owner\VenueMediaController::class, 'storeCover'])->name('venues.media.cover');
+    Route::post('/venues/{venue}/media/layout', [\App\Http\Controllers\Owner\VenueMediaController::class, 'storeLayout'])->name('venues.media.layout');
     Route::post('/venues/{venue}/media/photos', [\App\Http\Controllers\Owner\VenueMediaController::class, 'storePhoto'])->name('venues.media.photos.store');
     Route::delete('/venues/{venue}/media/photos/{photo}', [\App\Http\Controllers\Owner\VenueMediaController::class, 'destroyPhoto'])->name('venues.media.photos.destroy');
     Route::get('/venues/{venue}', \App\Livewire\Owner\Venues\Courts::class)->name('venues.courts');

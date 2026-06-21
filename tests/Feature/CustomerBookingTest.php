@@ -149,7 +149,7 @@ test('a booked slot shows as taken in the calendar grid', function () {
         ->get(route('venues.show', ['venue' => $session->court->venue, 'date' => $date->toDateString()]))
         ->assertOk()
         ->assertSee('Booked')
-        ->assertDontSee('RM 40'); // the only slot is taken → no selectable price
+        ->assertDontSee('wire:click="toggleSlot', escape: false); // the only slot is taken → no selectable slot button
 });
 
 test('a customer can select multiple slots and pay for them in one go', function () {

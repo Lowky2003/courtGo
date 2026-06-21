@@ -26,6 +26,56 @@
         @error('amenities.*') <flux:text class="text-sm text-red-600">{{ $message }}</flux:text> @enderror
     </div>
 
+    {{-- Venue details (Livewire) --}}
+    <div class="space-y-5 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
+        <flux:heading size="lg">Venue details</flux:heading>
+
+        {{-- Announcement --}}
+        <div class="space-y-2">
+            <flux:textarea wire:model="announcement" label="Announcement" placeholder="e.g. Closed 31 Aug for maintenance" rows="2" />
+            <div class="flex flex-wrap items-end gap-4">
+                <flux:checkbox wire:model.live="announcementActive" label="Show this announcement" />
+                <flux:input type="date" wire:model="announcementUntil" label="Hide after (optional)" :min="now()->toDateString()" class="max-w-[12rem]" />
+            </div>
+        </div>
+
+        <flux:separator variant="subtle" />
+
+        {{-- Opening hours --}}
+        <div class="space-y-2">
+            <flux:text class="font-medium">Opening hours</flux:text>
+            @foreach ($weekdays as $dow => $label)
+                <div class="flex flex-wrap items-center gap-3" wire:key="oh-{{ $dow }}">
+                    <span class="w-24 text-sm">{{ $label }}</span>
+                    <flux:checkbox wire:model.live="openingHours.{{ $dow }}.closed" label="Closed" />
+                    @unless ($openingHours[$dow]['closed'])
+                        <flux:input type="time" wire:model="openingHours.{{ $dow }}.open" class="max-w-[8rem]" />
+                        <span class="text-zinc-400">–</span>
+                        <flux:input type="time" wire:model="openingHours.{{ $dow }}.close" class="max-w-[8rem]" />
+                    @endunless
+                </div>
+            @endforeach
+        </div>
+
+        <flux:separator variant="subtle" />
+
+        <flux:input wire:model="pricingNote" label="Pricing note (optional)" placeholder="e.g. Peak RM45 / off-peak RM30" />
+
+        <flux:textarea wire:model="policy" label="Policy (optional)" placeholder="Cancellation, rules, etc." rows="3" />
+
+        {{-- Contact --}}
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <flux:input wire:model="contactPhone" label="Phone" />
+            <flux:input wire:model="contactWhatsapp" label="WhatsApp" placeholder="60123456789" />
+            <flux:input wire:model="contactEmail" type="email" label="Email" />
+            <flux:input wire:model="contactWebsite" label="Website" placeholder="https://…" />
+            <flux:input wire:model="contactInstagram" label="Instagram" placeholder="@handle or link" />
+            <flux:input wire:model="contactFacebook" label="Facebook" placeholder="page name or link" />
+        </div>
+
+        <flux:button variant="primary" wire:click="saveInfo">Save details</flux:button>
+    </div>
+
     {{-- Cover photo (plain HTTP form → media controller, returns here) --}}
     <div class="space-y-3 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
         <flux:heading size="lg">Cover photo</flux:heading>
@@ -68,5 +118,19 @@
         @else
             <flux:text class="text-sm text-zinc-400">Gallery is full (12 photos).</flux:text>
         @endif
+    </div>
+
+    {{-- Venue layout / floor plan (plain HTTP form → media controller) --}}
+    <div class="space-y-3 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
+        <flux:heading size="lg">Venue layout</flux:heading>
+        <flux:text class="text-sm text-zinc-500">A floor-plan or layout image of your venue (optional).</flux:text>
+        @if ($venue->layoutImageUrl())
+            <img src="{{ $venue->layoutImageUrl() }}" alt="" class="max-h-64 w-full rounded-lg object-contain" />
+        @endif
+        <form method="POST" action="{{ route('owner.venues.media.layout', $venue) }}" enctype="multipart/form-data" class="flex items-center gap-3">
+            @csrf
+            <input type="file" name="photo" accept="image/*" required class="text-sm" />
+            <flux:button type="submit" variant="primary" size="sm">Upload layout</flux:button>
+        </form>
     </div>
 </div>

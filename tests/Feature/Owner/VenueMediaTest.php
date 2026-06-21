@@ -68,6 +68,21 @@ test('an owner can upload a cover photo that returns to the page', function () {
     Storage::disk('public')->assertExists($venue->fresh()->image_path);
 });
 
+test('an owner can upload a venue layout image', function () {
+    Storage::fake('public');
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->for($owner, 'owner')->create();
+
+    $this->actingAs($owner)
+        ->post(route('owner.venues.media.layout', $venue), [
+            'photo' => UploadedFile::fake()->image('plan.jpg'),
+        ])
+        ->assertRedirect();
+
+    expect($venue->fresh()->layout_image_path)->not->toBeNull();
+    Storage::disk('public')->assertExists($venue->fresh()->layout_image_path);
+});
+
 test('a non-raster (svg) upload is rejected', function () {
     $owner = User::factory()->create(['role' => UserRole::Owner]);
     $venue = Venue::factory()->for($owner, 'owner')->create();
