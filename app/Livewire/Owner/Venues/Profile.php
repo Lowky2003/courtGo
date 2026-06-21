@@ -93,6 +93,12 @@ class Profile extends Component
         // Silent: this autosaves on every toggle, so the ticked state is the feedback.
     }
 
+    /** "HH:MM" → minutes since midnight. */
+    private function minutesOf(string $time): int
+    {
+        return (int) substr($time, 0, 2) * 60 + (int) substr($time, 3, 2);
+    }
+
     /** Set every weekday to the bulk open/close time (and mark them all open). */
     public function applyHoursToAll(): void
     {
@@ -153,10 +159,17 @@ class Profile extends Component
                     ]);
                 }
 
-                if ($hasOpen && $hasClose && $day['close'] <= $day['open']) {
-                    throw ValidationException::withMessages([
-                        "openingHours.$dow.close" => 'Closing time must be after opening time.',
-                    ]);
+                if ($hasOpen && $hasClose) {
+                    // A "00:00" close means midnight (end of day), so it counts as
+                    // AFTER any opening time, not the start of the day.
+                    $openMin = $this->minutesOf($day['open']);
+                    $closeMin = $day['close'] === '00:00' ? 1440 : $this->minutesOf($day['close']);
+
+                    if ($closeMin <= $openMin) {
+                        throw ValidationException::withMessages([
+                            "openingHours.$dow.close" => 'Closing time must be after opening time.',
+                        ]);
+                    }
                 }
             }
         } catch (ValidationException $e) {

@@ -131,6 +131,21 @@ test('an owner can mark every day closed at once', function () {
     expect($venue->fresh()->opening_hours[1]['closed'])->toBeTrue();
 });
 
+test('an opening day can close at midnight (00:00 = end of day)', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->for($owner, 'owner')->create();
+
+    Livewire::actingAs($owner)
+        ->test(Profile::class, ['venue' => $venue])
+        ->set('openingHours.1.closed', false)
+        ->set('openingHours.1.open', '10:00')
+        ->set('openingHours.1.close', '00:00') // 10am – 12am (midnight)
+        ->call('saveInfo')
+        ->assertHasNoErrors();
+
+    expect($venue->fresh()->opening_hours[1]['close'])->toBe('00:00');
+});
+
 test('a half-filled opening day (only one time) is rejected', function () {
     $owner = User::factory()->create(['role' => UserRole::Owner]);
     $venue = Venue::factory()->for($owner, 'owner')->create();
