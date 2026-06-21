@@ -105,9 +105,11 @@ class Venue extends Model
      */
     public function priceRange(): ?array
     {
+        // Only count slots customers can actually book, so the advertised range
+        // matches the booking grid (nothing shown for a non-bookable venue).
         $prices = SessionTemplate::query()
-            ->whereHas('court', fn ($q) => $q->where('venue_id', $this->id))
             ->where('is_active', true)
+            ->whereHas('court', fn ($q) => $q->where('venue_id', $this->id)->bookable())
             ->pluck('price');
 
         if ($prices->isEmpty()) {

@@ -9,9 +9,21 @@ use App\Models\Venue;
 use Illuminate\Support\Carbon;
 use Livewire\Livewire;
 
-test('price range is the min and max of active slot prices', function () {
-    $venue = Venue::factory()->create();
-    $court = Court::factory()->for($venue)->create();
+/** A live, bookable venue (approved venue + subscribed + Connect-onboarded owner). */
+function profileLiveVenue(): Venue
+{
+    $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
+    $owner->subscriptions()->create([
+        'type' => 'default', 'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active', 'stripe_price' => 'price_test', 'quantity' => 1,
+    ]);
+
+    return Venue::factory()->for($owner, 'owner')->create();
+}
+
+test('price range is the min and max of active, bookable slot prices', function () {
+    $venue = profileLiveVenue();
+    $court = Court::factory()->for($venue)->create(['is_active' => true]);
     SessionTemplate::factory()->for($court)->create(['price' => 30, 'is_active' => true]);
     SessionTemplate::factory()->for($court)->create(['price' => 50, 'is_active' => true]);
     SessionTemplate::factory()->for($court)->create(['price' => 999, 'is_active' => false]); // ignored
@@ -21,6 +33,15 @@ test('price range is the min and max of active slot prices', function () {
 
 test('price range is null when the venue has no priced slots', function () {
     expect(Venue::factory()->create()->priceRange())->toBeNull();
+});
+
+test('price range is null for a venue whose owner is not live (matches the empty grid)', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner]); // not subscribed → not bookable
+    $venue = Venue::factory()->for($owner, 'owner')->create();
+    $court = Court::factory()->for($venue)->create(['is_active' => true]);
+    SessionTemplate::factory()->for($court)->create(['price' => 30, 'is_active' => true]);
+
+    expect($venue->priceRange())->toBeNull();
 });
 
 test('an announcement is visible only when active, present and not expired', function () {
@@ -74,4 +95,30 @@ test('saving details rejects a bad email and a backwards opening time', function
         ->set('openingHours.1.close', '08:00')
         ->call('saveInfo')
         ->assertHasErrors('openingHours.1.close');
+});
+
+test('a half-filled opening day (only one time) is rejected', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->for($owner, 'owner')->create();
+
+    Livewire::actingAs($owner)
+        ->test(Profile::class, ['venue' => $venue])
+        ->set('openingHours.1.closed', false)
+        ->set('openingHours.1.open', '08:00')
+        ->set('openingHours.1.close', '') // only one time set
+        ->call('saveInfo')
+        ->assertHasErrors('openingHours.1.close');
+});
+
+test('details still save when the stored announcement date is already in the past', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->for($owner, 'owner')->create(['announcement_until' => '2020-01-01']);
+
+    Livewire::actingAs($owner)
+        ->test(Profile::class, ['venue' => $venue])
+        ->set('pricingNote', 'Updated')
+        ->call('saveInfo')
+        ->assertHasNoErrors();
+
+    expect($venue->fresh()->pricing_note)->toBe('Updated');
 });

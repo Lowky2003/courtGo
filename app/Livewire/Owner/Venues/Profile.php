@@ -100,7 +100,9 @@ class Profile extends Component
             'pricingNote' => 'nullable|string|max:255',
             'announcement' => 'nullable|string|max:1000',
             'announcementActive' => 'boolean',
-            'announcementUntil' => 'nullable|date|after_or_equal:today',
+            // No after_or_equal:today — a past date just stops the announcement
+            // showing (see Venue::announcementVisible), it must not block saves.
+            'announcementUntil' => 'nullable|date',
             'policy' => 'nullable|string|max:5000',
             'contactPhone' => 'nullable|string|max:50',
             'contactWhatsapp' => 'nullable|string|max:50',
@@ -110,9 +112,23 @@ class Profile extends Component
             'contactFacebook' => 'nullable|string|max:255',
         ]);
 
-        // An open day with both times set must close after it opens.
+        // Validate each open day's times: need both (or neither, = unset), and
+        // the closing time must be after the opening time.
         foreach ($this->openingHours as $dow => $day) {
-            if (empty($day['closed']) && $day['open'] !== '' && $day['close'] !== '' && $day['close'] <= $day['open']) {
+            if (! empty($day['closed'])) {
+                continue;
+            }
+
+            $hasOpen = $day['open'] !== '';
+            $hasClose = $day['close'] !== '';
+
+            if ($hasOpen xor $hasClose) {
+                throw ValidationException::withMessages([
+                    "openingHours.$dow.close" => 'Set both an opening and closing time, or mark the day closed.',
+                ]);
+            }
+
+            if ($hasOpen && $hasClose && $day['close'] <= $day['open']) {
                 throw ValidationException::withMessages([
                     "openingHours.$dow.close" => 'Closing time must be after opening time.',
                 ]);

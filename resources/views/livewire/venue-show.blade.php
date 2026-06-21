@@ -74,7 +74,7 @@
             @if ($range)
                 <div class="text-sm">
                     <flux:text class="font-medium">Pricing</flux:text>
-                    <div>RM {{ number_format($range['min'], 0) }}@if ($range['max'] != $range['min']) – RM {{ number_format($range['max'], 0) }}@endif <span class="text-zinc-400">per slot</span></div>
+                    <div>RM {{ number_format(floor($range['min']), 0) }}@if (ceil($range['max']) != floor($range['min'])) – RM {{ number_format(ceil($range['max']), 0) }}@endif <span class="text-zinc-400">per slot</span></div>
                     @if ($venue->pricing_note)
                         <div class="text-zinc-500">{{ $venue->pricing_note }}</div>
                     @endif

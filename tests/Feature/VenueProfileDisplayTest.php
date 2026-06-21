@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\UserRole;
 use App\Models\Court;
 use App\Models\SessionTemplate;
 use App\Models\User;
@@ -23,13 +24,19 @@ test('the venue page shows amenities, gallery, and directions', function () {
 });
 
 test('the venue page shows opening hours, price range, announcement, policy and contact', function () {
-    $venue = Venue::factory()->create([
+    // A live owner so the price range (which only counts bookable slots) shows.
+    $owner = User::factory()->create(['role' => UserRole::Owner, 'connect_onboarded' => true]);
+    $owner->subscriptions()->create([
+        'type' => 'default', 'stripe_id' => 'sub_'.uniqid(),
+        'stripe_status' => 'active', 'stripe_price' => 'price_test', 'quantity' => 1,
+    ]);
+    $venue = Venue::factory()->for($owner, 'owner')->create([
         'announcement' => 'Open house this weekend', 'announcement_active' => true,
         'opening_hours' => [1 => ['closed' => false, 'open' => '08:00', 'close' => '22:00']],
         'pricing_note' => 'Peak RM45', 'policy' => 'No smoking',
         'contact_email' => 'hi@venue.test', 'contact_whatsapp' => '60123456789',
     ]);
-    $court = Court::factory()->for($venue)->create();
+    $court = Court::factory()->for($venue)->create(['is_active' => true]);
     SessionTemplate::factory()->for($court)->create(['price' => 40, 'is_active' => true]);
 
     $this->actingAs(User::factory()->create())
