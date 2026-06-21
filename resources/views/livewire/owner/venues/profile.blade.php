@@ -99,9 +99,9 @@
         @if ($venue->imageUrl())
             <img src="{{ $venue->imageUrl() }}" alt="" class="h-40 w-full rounded-lg object-cover" />
         @endif
-        <form method="POST" action="{{ route('owner.venues.media.cover', $venue) }}" enctype="multipart/form-data" class="flex items-center gap-3">
+        <form method="POST" action="{{ route('owner.venues.media.cover', $venue) }}" enctype="multipart/form-data" class="flex flex-wrap items-center gap-3">
             @csrf
-            <input type="file" name="photo" accept="image/*" required class="text-sm" />
+            <x-file-input name="photo" accept="image/*" required />
             <flux:button type="submit" variant="primary" size="sm">Upload cover</flux:button>
         </form>
     </div>
@@ -129,8 +129,8 @@
         @if ($photos->count() < 12)
             <form method="POST" action="{{ route('owner.venues.media.photos.store', $venue) }}" enctype="multipart/form-data" class="space-y-1">
                 @csrf
-                <div class="flex items-center gap-3">
-                    <input type="file" name="photos[]" accept="image/*" multiple required class="text-sm" />
+                <div class="flex flex-wrap items-center gap-3">
+                    <x-file-input name="photos" accept="image/*" multiple required />
                     <flux:button type="submit" variant="primary" size="sm">Add photos</flux:button>
                 </div>
                 <flux:text class="text-xs text-zinc-400">Pick several at once — up to {{ 12 - $photos->count() }} more.</flux:text>
@@ -147,9 +147,9 @@
         @if ($venue->layoutImageUrl())
             <img src="{{ $venue->layoutImageUrl() }}" alt="" class="max-h-64 w-full rounded-lg object-contain" />
         @endif
-        <form method="POST" action="{{ route('owner.venues.media.layout', $venue) }}" enctype="multipart/form-data" class="flex items-center gap-3">
+        <form method="POST" action="{{ route('owner.venues.media.layout', $venue) }}" enctype="multipart/form-data" class="flex flex-wrap items-center gap-3">
             @csrf
-            <input type="file" name="photo" accept="image/*" required class="text-sm" />
+            <x-file-input name="photo" accept="image/*" required />
             <flux:button type="submit" variant="primary" size="sm">Upload layout</flux:button>
         </form>
     </div>
@@ -219,8 +219,8 @@
                 <form method="POST" action="{{ route('owner.venues.documents.store', $venue) }}" enctype="multipart/form-data" class="flex flex-wrap items-center gap-3">
                     @csrf
                     <input type="hidden" name="type" value="{{ $key }}" />
-                    <input type="file" name="document" accept=".pdf,image/*" required class="text-sm" />
-                    <flux:button type="submit" variant="ghost" size="sm">Upload</flux:button>
+                    <x-file-input name="document" accept=".pdf,image/*" required />
+                    <flux:button type="submit" variant="primary" size="sm">Upload</flux:button>
                 </form>
             </div>
         @endforeach

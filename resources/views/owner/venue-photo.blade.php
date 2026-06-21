@@ -19,8 +19,7 @@
 
             <div>
                 <flux:label>{{ $venue->imageUrl() ? 'Replace photo' : 'Choose a photo' }}</flux:label>
-                <input type="file" name="photo" accept="image/*" data-resize-image required
-                       class="mt-1 block w-full text-sm text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-white hover:file:bg-blue-700 dark:text-zinc-300" />
+                <x-file-input name="photo" accept="image/*" data-resize-image required class="mt-1" />
                 @error('photo')
                     <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
                 @enderror
