@@ -23,6 +23,16 @@ class BillingController extends Controller
 
         $user = $request->user();
 
+        // Gated: a venue must be admin-approved (documents verified) before the
+        // owner can start paying for it — don't charge for a listing we haven't
+        // cleared to go live.
+        if (! $venue->isApproved()) {
+            return redirect()->route('owner.billing')->with(
+                'stripe_error',
+                $venue->name.' must be approved by an admin before you can subscribe to it. Upload its verification documents to get approved.'
+            );
+        }
+
         // Already subscribed — don't start a second checkout (would double-bill).
         if ($user->subscribed($venue->subscriptionType())) {
             return redirect()->route('owner.billing');

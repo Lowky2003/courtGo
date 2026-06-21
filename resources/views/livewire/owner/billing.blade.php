@@ -33,6 +33,12 @@
                         <div>
                             <div class="font-medium">{{ $venue->name }}</div>
                             <div class="text-sm text-zinc-500">{{ $venue->city }}, {{ $venue->state }}</div>
+                            @unless ($venue->isApproved())
+                                <div class="text-xs text-amber-600 dark:text-amber-500">
+                                    Get approved before subscribing —
+                                    <a class="underline" href="{{ route('owner.venues.profile', $venue) }}" wire:navigate>upload documents</a>.
+                                </div>
+                            @endunless
                         </div>
                         <div class="flex items-center gap-2">
                             @if ($subscribed)
@@ -42,9 +48,12 @@
                                     <flux:badge color="green" size="sm">Subscribed</flux:badge>
                                 @endif
                                 <flux:button size="sm" variant="ghost" href="{{ route('owner.billing.portal') }}">Manage</flux:button>
-                            @else
+                            @elseif ($venue->isApproved())
                                 <flux:badge color="zinc" size="sm">Not subscribed</flux:badge>
                                 <flux:button size="sm" variant="primary" href="{{ route('owner.billing.subscribe', $venue) }}">Subscribe</flux:button>
+                            @else
+                                <flux:badge color="amber" size="sm">Pending approval</flux:badge>
+                                <flux:button size="sm" variant="primary" disabled>Subscribe</flux:button>
                             @endif
                         </div>
                     </div>

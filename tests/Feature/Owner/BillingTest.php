@@ -60,6 +60,27 @@ test('an owner cannot subscribe another owners venue', function () {
         ->assertForbidden();
 });
 
+test('an owner cannot subscribe a venue that is not approved yet', function () {
+    $venue = Venue::factory()->pending()->create();
+
+    $this->actingAs($venue->owner)
+        ->get(route('owner.billing.subscribe', $venue))
+        ->assertRedirect(route('owner.billing'))
+        ->assertSessionHas('stripe_error');
+});
+
+test('the billing page gates subscribe until a venue is approved', function () {
+    $pending = Venue::factory()->pending()->create(['name' => 'Pending Place']);
+    $owner = $pending->owner;
+    $approved = Venue::factory()->for($owner, 'owner')->create(['name' => 'Approved Arena']); // approved by default
+
+    $this->actingAs($owner)->get(route('owner.billing'))
+        ->assertOk()
+        ->assertSee('Pending approval')                                          // the pending venue
+        ->assertSee(route('owner.billing.subscribe', $approved), escape: false)   // approved → live Subscribe link
+        ->assertDontSee(route('owner.billing.subscribe', $pending), escape: false); // pending → no Subscribe link
+});
+
 test('the checkout return route redirects to billing', function () {
     config()->set('cashier.secret', null); // no Stripe → no sync, just redirect
     $venue = Venue::factory()->create();
