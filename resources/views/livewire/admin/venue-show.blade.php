@@ -9,7 +9,7 @@
             <div class="flex flex-wrap gap-2 pt-1">
                 @if ($venue->isApproved())
                     <flux:badge color="green" size="sm">Approved</flux:badge>
-                @elseif ($venue->isRejected())
+                @elseif ($venue->needsChanges())
                     <flux:badge color="red" size="sm">Rejected</flux:badge>
                 @else
                     <flux:badge color="amber" size="sm">Pending approval</flux:badge>

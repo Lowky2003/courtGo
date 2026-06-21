@@ -7,6 +7,19 @@ use App\Models\User;
 use App\Models\Venue;
 use App\Models\VenuePhoto;
 
+test('the venue page shows social contact links as icons', function () {
+    $venue = Venue::factory()->create([
+        'contact_whatsapp' => '60123456789',
+        'contact_facebook' => 'https://facebook.com/myvenue',
+    ]);
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('venues.show', $venue))
+        ->assertOk()
+        ->assertSee('wa.me/60123456789', escape: false)
+        ->assertSee('https://facebook.com/myvenue', escape: false);
+});
+
 test('the venue page shows amenities, gallery, and directions', function () {
     $venue = Venue::factory()->create([
         'amenities' => ['parking', 'wifi'],

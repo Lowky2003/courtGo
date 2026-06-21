@@ -176,8 +176,8 @@
             <flux:input wire:model="contactWhatsapp" label="WhatsApp" placeholder="60123456789" />
             <flux:input wire:model="contactEmail" type="email" label="Email" />
             <flux:input wire:model="contactWebsite" label="Website" placeholder="https://…" />
-            <flux:input wire:model="contactInstagram" label="Instagram" placeholder="@handle or link" />
-            <flux:input wire:model="contactFacebook" label="Facebook" placeholder="page name or link" />
+            <flux:input wire:model="contactInstagram" label="Instagram link" placeholder="https://instagram.com/yourvenue" />
+            <flux:input wire:model="contactFacebook" label="Facebook link" placeholder="https://facebook.com/yourvenue" />
         </div>
 
         <flux:button variant="primary" wire:click="saveInfo">Save details</flux:button>

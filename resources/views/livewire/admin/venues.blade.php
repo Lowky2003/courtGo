@@ -31,8 +31,14 @@
                             <td class="px-4 py-3">
                                 @if ($venue->isApproved())
                                     <flux:badge color="green" size="sm">Approved</flux:badge>
+                                @elseif ($venue->isFullyVerified())
+                                    <flux:badge color="green" size="sm">Ready to approve</flux:badge>
+                                @elseif ($venue->itemsAwaitingReview() > 0)
+                                    <flux:badge color="blue" size="sm">Needs review ({{ $venue->itemsAwaitingReview() }})</flux:badge>
+                                @elseif ($venue->needsChanges())
+                                    <flux:badge color="red" size="sm">Rejected — waiting on owner</flux:badge>
                                 @else
-                                    <flux:badge color="amber" size="sm">Pending approval</flux:badge>
+                                    <flux:badge color="amber" size="sm">Pending</flux:badge>
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-right">

@@ -31,6 +31,14 @@ class Index extends Component
     #[Validate('required|string|max:255')]
     public string $state = '';
 
+    /** Whether the "add a venue" form is open (it's collapsed by default). */
+    public bool $showForm = false;
+
+    public function toggleForm(): void
+    {
+        $this->showForm = ! $this->showForm;
+    }
+
     public function save(): void
     {
         $validated = $this->validate();
@@ -41,6 +49,7 @@ class Index extends Component
         auth()->user()->venues()->create($validated);
 
         $this->reset('name', 'description', 'address', 'city', 'state');
+        $this->showForm = false; // collapse the form again
         $this->dispatch('clear-search-select'); // clears the custom state dropdown
 
         session()->flash('status', 'Venue added! Next, open its Profile and upload the verification documents so an admin can approve it — you can add courts and schedules in the meantime.');

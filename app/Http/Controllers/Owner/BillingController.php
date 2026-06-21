@@ -50,6 +50,9 @@ class BillingController extends Controller
         return $user->newSubscription($venue->subscriptionType(), $priceId)->checkout([
             'success_url' => route('owner.billing.subscribed', $venue).'?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => route('owner.billing').'?checkout=cancel',
+            // Names the subscription in Stripe (dashboard + invoices) per venue.
+            // array_merge_recursive keeps Cashier's own subscription_data.metadata.
+            'subscription_data' => ['description' => 'CourtGo Owner Plan: '.$venue->name],
         ]);
     }
 

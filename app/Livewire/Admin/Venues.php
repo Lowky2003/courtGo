@@ -31,7 +31,7 @@ class Venues extends Component
     public function render()
     {
         return view('livewire.admin.venues', [
-            'venues' => Venue::with('owner')
+            'venues' => Venue::with('owner', 'documents')
                 ->withCount('courts')
                 ->orderByRaw('approved_at IS NULL DESC') // pending venues first
                 ->orderBy('name')

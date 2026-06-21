@@ -92,26 +92,9 @@
             {{-- Contact --}}
             @php($hasContact = $venue->contact_phone || $venue->contact_whatsapp || $venue->contact_email || $venue->contact_website || $venue->contact_instagram || $venue->contact_facebook)
             @if ($hasContact)
-                <div class="space-y-1 text-sm [&_a]:text-blue-600 dark:[&_a]:text-blue-400 [&_a]:hover:underline">
+                <div class="space-y-2 text-sm">
                     <flux:text class="font-medium">Contact</flux:text>
-                    @if ($venue->contact_phone)
-                        <div><a href="tel:{{ $venue->contact_phone }}">📞 {{ $venue->contact_phone }}</a></div>
-                    @endif
-                    @if ($venue->contact_whatsapp)
-                        <div><a href="https://wa.me/{{ preg_replace('/\D/', '', $venue->contact_whatsapp) }}" target="_blank" rel="noopener noreferrer">WhatsApp</a></div>
-                    @endif
-                    @if ($venue->contact_email)
-                        <div><a href="mailto:{{ $venue->contact_email }}">✉️ {{ $venue->contact_email }}</a></div>
-                    @endif
-                    @if ($venue->contact_website)
-                        <div><a href="{{ $venue->contact_website }}" target="_blank" rel="noopener noreferrer">Website</a></div>
-                    @endif
-                    @if ($venue->contact_instagram)
-                        <div><a href="{{ \Illuminate\Support\Str::startsWith($venue->contact_instagram, 'http') ? $venue->contact_instagram : 'https://instagram.com/'.ltrim($venue->contact_instagram, '@') }}" target="_blank" rel="noopener noreferrer">Instagram</a></div>
-                    @endif
-                    @if ($venue->contact_facebook)
-                        <div><a href="{{ \Illuminate\Support\Str::startsWith($venue->contact_facebook, 'http') ? $venue->contact_facebook : 'https://facebook.com/'.$venue->contact_facebook }}" target="_blank" rel="noopener noreferrer">Facebook</a></div>
-                    @endif
+                    <x-venue-contact :venue="$venue" />
                 </div>
             @endif
 

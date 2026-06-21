@@ -203,6 +203,17 @@ class Venue extends Model
     }
 
     /**
+     * How many items have an uploaded document the admin hasn't verified or
+     * rejected yet — i.e. new/re-uploaded documents waiting for review.
+     */
+    public function itemsAwaitingReview(): int
+    {
+        $rejected = array_keys($this->item_rejections ?? []);
+
+        return count(array_diff($this->uploadedDocumentTypes(), $this->verified_items ?? [], $rejected));
+    }
+
+    /**
      * Dates the whole venue is closed (holidays, maintenance) — every court is
      * unbookable on these dates.
      */

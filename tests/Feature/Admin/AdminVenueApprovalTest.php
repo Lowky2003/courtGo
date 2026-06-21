@@ -21,6 +21,16 @@ test('the admin venues page renders for an admin', function () {
         ->assertSeeLivewire(Venues::class);
 });
 
+test('the venues list flags venues with documents awaiting review', function () {
+    $admin = User::factory()->create(['role' => UserRole::Admin]);
+    $venue = Venue::factory()->pending()->create();
+    $venue->documents()->create(['type' => 'ssm', 'path' => 'p', 'original_name' => 'ssm.pdf']);
+
+    $this->actingAs($admin)->get(route('admin.venues'))
+        ->assertOk()
+        ->assertSee('Needs review (1)');
+});
+
 test('pending venues are listed before approved ones', function () {
     $admin = User::factory()->create(['role' => UserRole::Admin]);
     Venue::factory()->create(['name' => 'Approved Arena']);           // approved by default

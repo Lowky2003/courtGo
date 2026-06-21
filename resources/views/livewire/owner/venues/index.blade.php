@@ -1,6 +1,13 @@
-<div class="space-y-8 p-6 max-w-4xl mx-auto w-full">
-    <flux:heading size="xl">My Venues</flux:heading>
-    <flux:text>Add the places you run. Each venue can hold several courts.</flux:text>
+<div class="space-y-6 p-6 max-w-4xl mx-auto w-full">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="space-y-1">
+            <flux:heading size="xl">My Venues</flux:heading>
+            <flux:text>The places you run. Each venue can hold several courts.</flux:text>
+        </div>
+        <flux:button variant="primary" :icon="$showForm ? 'x-mark' : 'plus'" wire:click="toggleForm">
+            {{ $showForm ? 'Cancel' : 'Add venue' }}
+        </flux:button>
+    </div>
 
     @if (session('status'))
         <flux:callout variant="success" icon="check-circle">
@@ -8,24 +15,26 @@
         </flux:callout>
     @endif
 
-    {{-- Create venue form --}}
-    <form wire:submit="save" class="space-y-4 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
-        <flux:heading size="lg">Add a new venue</flux:heading>
+    {{-- Create venue form — collapsed until "Add venue" is clicked --}}
+    @if ($showForm)
+        <form wire:submit="save" class="space-y-4 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
+            <flux:heading size="lg">Add a new venue</flux:heading>
 
-        <flux:input wire:model="name" label="Venue name" placeholder="Sunway Badminton Hall" autocomplete="new-password" data-no-autofill />
-        <flux:textarea wire:model="description" label="Description (optional)" placeholder="A short description of this place" />
-        <flux:input wire:model="address" label="Address" placeholder="Jalan PJS 11, Bandar Sunway" />
+            <flux:input wire:model="name" label="Venue name" placeholder="Sunway Badminton Hall" autocomplete="new-password" data-no-autofill />
+            <flux:textarea wire:model="description" label="Description (optional)" placeholder="A short description of this place" />
+            <flux:input wire:model="address" label="Address" placeholder="Jalan PJS 11, Bandar Sunway" />
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <flux:input wire:model="city" label="City" placeholder="Subang Jaya" autocomplete="new-password" data-no-autofill />
-            <x-searchable-select label="State" placeholder="Type or pick a state"
-                :options="config('courtgo.states')" wire-model="state" :value="$state" wire:key="venue-state-select" />
-        </div>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <flux:input wire:model="city" label="City" placeholder="Subang Jaya" autocomplete="new-password" data-no-autofill />
+                <x-searchable-select label="State" placeholder="Type or pick a state"
+                    :options="config('courtgo.states')" wire-model="state" :value="$state" wire:key="venue-state-select" />
+            </div>
 
-        <flux:text class="text-sm text-zinc-500">You can add a photo after creating the venue.</flux:text>
+            <flux:text class="text-sm text-zinc-500">You can add photos after creating the venue.</flux:text>
 
-        <flux:button type="submit" variant="primary">Add venue</flux:button>
-    </form>
+            <flux:button type="submit" variant="primary">Add venue</flux:button>
+        </form>
+    @endif
 
     {{-- Venue list --}}
     <div class="space-y-3">

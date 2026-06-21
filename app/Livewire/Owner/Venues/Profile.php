@@ -139,8 +139,8 @@ class Profile extends Component
                 'contactWhatsapp' => 'nullable|string|max:50',
                 'contactEmail' => 'nullable|email|max:255',
                 'contactWebsite' => 'nullable|url|max:255',
-                'contactInstagram' => 'nullable|string|max:255',
-                'contactFacebook' => 'nullable|string|max:255',
+                'contactInstagram' => 'nullable|url|max:255',
+                'contactFacebook' => 'nullable|url|max:255',
             ]);
 
             // Validate each open day's times: need both (or neither, = unset), and

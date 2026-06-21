@@ -8,6 +8,15 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
+test('the add-venue form is collapsed until the Add venue button is used', function () {
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+
+    Livewire::actingAs($owner)->test(Index::class)
+        ->assertDontSee('Add a new venue')
+        ->call('toggleForm')
+        ->assertSee('Add a new venue');
+});
+
 test('deleting a venue removes its image file', function () {
     Storage::fake('public');
     $owner = User::factory()->create(['role' => UserRole::Owner]);

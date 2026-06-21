@@ -15,6 +15,16 @@ function profileLiveVenue(): Venue
     return Venue::factory()->subscribed()->create();
 }
 
+test('instagram and facebook must be links', function () {
+    $venue = Venue::factory()->create();
+
+    Livewire::actingAs($venue->owner)->test(Profile::class, ['venue' => $venue])
+        ->set('contactInstagram', '@nothandle')
+        ->set('contactFacebook', 'just text')
+        ->call('saveInfo')
+        ->assertHasErrors(['contactInstagram', 'contactFacebook']);
+});
+
 test('price range is the min and max of active, bookable slot prices', function () {
     $venue = profileLiveVenue();
     $court = Court::factory()->for($venue)->create(['is_active' => true]);
