@@ -31,8 +31,13 @@
                 <flux:callout.heading>Your venue was not approved</flux:callout.heading>
                 <flux:callout.text>
                     <strong>Reason:</strong> {{ $venue->rejection_reason }}<br>
-                    Please fix this and re-upload the relevant document below — your venue goes back for review automatically.
+                    Your uploaded documents were cleared — please re-upload them below and your venue goes back for review automatically.
                 </flux:callout.text>
+            </flux:callout>
+        @elseif ($venue->hasItemRejections())
+            <flux:callout variant="danger" icon="x-circle">
+                <flux:callout.heading>Some documents need changes</flux:callout.heading>
+                <flux:callout.text>The CourtGo admin asked you to redo the documents marked <strong>Rejected</strong> below. Re-upload each one and it goes back for review automatically.</flux:callout.text>
             </flux:callout>
         @elseif ($venue->hasAllDocuments())
             <flux:callout variant="warning" icon="clock">
@@ -52,17 +57,22 @@
         @error('document') <flux:text class="text-sm text-red-600">{{ $message }}</flux:text> @enderror
 
         @foreach ($verificationItems as $key => $item)
-            <div class="space-y-2 rounded-lg border border-zinc-100 p-4 dark:border-zinc-800" wire:key="doc-{{ $key }}">
+            <div id="doc-{{ $key }}" class="scroll-mt-6 space-y-2 rounded-lg border p-4 {{ $venue->isItemRejected($key) ? 'border-red-300 dark:border-red-800' : 'border-zinc-100 dark:border-zinc-800' }}" wire:key="doc-{{ $key }}">
                 <div>
                     <div class="flex items-center gap-2">
                         <flux:text class="font-medium">{{ $item['label'] }}</flux:text>
-                        @if (! empty($documents[$key]))
+                        @if ($venue->isItemRejected($key))
+                            <flux:badge color="red" size="sm">Rejected</flux:badge>
+                        @elseif (! empty($documents[$key]))
                             <flux:badge color="green" size="sm">Uploaded</flux:badge>
                         @else
                             <flux:badge color="red" size="sm">Required</flux:badge>
                         @endif
                     </div>
                     <flux:text class="text-sm text-zinc-500">{{ $item['owner_hint'] }}</flux:text>
+                    @if ($venue->isItemRejected($key))
+                        <flux:text class="text-sm text-red-600"><strong>Admin's reason:</strong> {{ $venue->itemRejectionReason($key) }} Please re-upload.</flux:text>
+                    @endif
                 </div>
 
                 @if (! empty($documents[$key]))

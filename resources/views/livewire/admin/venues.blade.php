@@ -37,14 +37,13 @@
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <div class="flex items-center justify-end gap-2">
-                                    <flux:button size="sm" variant="ghost" :href="route('admin.venues.show', $venue)" wire:navigate>View</flux:button>
                                     @unless ($venue->isApproved())
                                         @if ($venue->isFullyVerified())
                                             <flux:button size="sm" variant="primary" wire:click="approve({{ $venue->id }})" wire:confirm="Approve this venue? Customers will be able to find and book it.">
                                                 Approve
                                             </flux:button>
                                         @else
-                                            <flux:button size="sm" variant="ghost" :href="route('admin.venues.show', $venue)" wire:navigate>Verify ({{ $venue->verifiedCount() }}/{{ count(\App\Models\Venue::verificationKeys()) }})</flux:button>
+                                            <flux:button size="sm" variant="ghost" :href="route('admin.venues.show', $venue)" wire:navigate>Review ({{ $venue->verifiedCount() }}/{{ count(\App\Models\Venue::verificationKeys()) }})</flux:button>
                                         @endif
                                     @endunless
                                 </div>

@@ -17,10 +17,15 @@ class VenueShow extends Component
 
     public Venue $venue;
 
-    /** Whether the reject-reason box is open, and its text. */
+    /** Whether the whole-venue reject-reason box is open, and its text. */
     public bool $rejecting = false;
 
     public string $rejectionReason = '';
+
+    /** Which single item's reject box is open, and its reason text. */
+    public ?string $rejectingItem = null;
+
+    public string $itemReason = '';
 
     public function mount(Venue $venue): void
     {
@@ -37,7 +42,8 @@ class VenueShow extends Component
         $items = $this->venue->verified_items ?? [];
         $alreadyVerified = in_array($key, $items, true);
 
-        // Can't verify an item the owner hasn't uploaded a document for.
+        // Can't verify an item with no uploaded document, or one that's rejected
+        // (its document was removed — wait for the owner to re-upload).
         if (! $alreadyVerified && ! $this->venue->documents()->where('type', $key)->exists()) {
             return;
         }
@@ -47,6 +53,40 @@ class VenueShow extends Component
             : [...$items, $key];
 
         $this->venue->update(['verified_items' => $items]);
+    }
+
+    /** Open / cancel the reject box for a single verification item. */
+    public function startRejectItem(string $key): void
+    {
+        $this->rejectingItem = in_array($key, Venue::verificationKeys(), true) ? $key : null;
+        $this->itemReason = '';
+        $this->resetValidation();
+    }
+
+    public function cancelRejectItem(): void
+    {
+        $this->rejectingItem = null;
+        $this->reset('itemReason');
+        $this->resetValidation();
+    }
+
+    /** Reject a single verification item with a reason; removes the owner's file for it. */
+    public function rejectItem(): void
+    {
+        if (! in_array($this->rejectingItem, Venue::verificationKeys(), true)) {
+            return;
+        }
+
+        $this->itemReason = trim($this->itemReason);
+        $this->validate(
+            ['itemReason' => 'required|string|min:5|max:1000'],
+            ['itemReason.required' => 'Please give the owner a reason for rejecting this document.'],
+        );
+
+        $this->venue->rejectItem($this->rejectingItem, $this->itemReason);
+
+        $this->rejectingItem = null;
+        $this->reset('itemReason');
     }
 
     /** Approve this venue so it becomes visible and bookable — only once fully verified. */

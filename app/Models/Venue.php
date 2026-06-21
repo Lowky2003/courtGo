@@ -39,6 +39,7 @@ class Venue extends Model
         'verified_items',
         'rejected_at',
         'rejection_reason',
+        'item_rejections',
     ];
 
     protected function casts(): array
@@ -51,6 +52,7 @@ class Venue extends Model
             'announcement_until' => 'date',
             'opening_hours' => 'array',
             'verified_items' => 'array',
+            'item_rejections' => 'array',
         ];
     }
 
@@ -235,11 +237,35 @@ class Venue extends Model
     }
 
     /**
-     * Whether an admin rejected this venue (and it hasn't since been approved).
+     * Whether an admin rejected this whole venue (and it hasn't since been approved).
      */
     public function isRejected(): bool
     {
         return ! is_null($this->rejected_at) && is_null($this->approved_at);
+    }
+
+    /** Whether a single verification item was rejected by an admin. */
+    public function isItemRejected(string $key): bool
+    {
+        return array_key_exists($key, $this->item_rejections ?? []);
+    }
+
+    /** The admin's reason for rejecting a single item, if any. */
+    public function itemRejectionReason(string $key): ?string
+    {
+        return ($this->item_rejections ?? [])[$key] ?? null;
+    }
+
+    /** Whether any individual verification item is currently rejected. */
+    public function hasItemRejections(): bool
+    {
+        return ! empty($this->item_rejections);
+    }
+
+    /** Whether the owner has changes to make (whole-venue rejected, or any item rejected). */
+    public function needsChanges(): bool
+    {
+        return $this->isRejected() || $this->hasItemRejections();
     }
 
     /**
@@ -251,6 +277,7 @@ class Venue extends Model
             'approved_at' => now(),
             'rejected_at' => null,
             'rejection_reason' => null,
+            'item_rejections' => null,
         ]);
 
         // A mail failure must never break the approval itself.
@@ -258,7 +285,8 @@ class Venue extends Model
     }
 
     /**
-     * Reject the venue with a reason shown to the owner, and email them.
+     * Reject the WHOLE venue with a reason, remove every uploaded document so the
+     * owner re-submits from scratch, and email them.
      */
     public function rejectByAdmin(string $reason): void
     {
@@ -266,9 +294,30 @@ class Venue extends Model
             'approved_at' => null,
             'rejected_at' => now(),
             'rejection_reason' => $reason,
+            'verified_items' => [],
+            'item_rejections' => null,
         ]);
 
+        $this->documents()->get()->each->delete(); // removes the files too (model event)
+
         rescue(fn () => $this->owner->notify(new \App\Notifications\VenueRejected($this)), report: true);
+    }
+
+    /**
+     * Reject a SINGLE verification item with a reason: un-verify it and remove the
+     * owner's uploaded document for it, so they have to re-upload.
+     */
+    public function rejectItem(string $key, string $reason): void
+    {
+        $rejections = $this->item_rejections ?? [];
+        $rejections[$key] = $reason;
+
+        $this->update([
+            'item_rejections' => $rejections,
+            'verified_items' => array_values(array_diff($this->verified_items ?? [], [$key])),
+        ]);
+
+        $this->documents()->where('type', $key)->get()->each->delete();
     }
 
     /** The owner's Cashier subscription name for THIS venue (one sub per venue). */

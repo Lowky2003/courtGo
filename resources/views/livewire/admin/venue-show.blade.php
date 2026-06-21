@@ -77,36 +77,59 @@
 
             <div class="divide-y divide-zinc-100 dark:divide-zinc-800">
                 @foreach ($verificationItems as $key => $item)
-                    <div class="flex flex-wrap items-start justify-between gap-3 py-3" wire:key="ver-{{ $key }}">
-                        <div class="min-w-0 flex-1 space-y-1">
-                            <div class="flex items-center gap-2">
-                                @if ($venue->isItemVerified($key))
-                                    <flux:icon name="check-circle" variant="solid" class="size-5 text-green-600" />
-                                @else
-                                    <flux:icon name="exclamation-circle" class="size-5 text-amber-500" />
-                                @endif
-                                <flux:text class="font-medium">{{ $item['label'] }}</flux:text>
-                            </div>
-                            <flux:text class="text-sm text-zinc-500">{{ $item['admin_hint'] }}</flux:text>
-
-                            @if (! empty($documents[$key]))
-                                <div class="flex flex-wrap gap-3 pt-1 text-sm">
-                                    @foreach ($documents[$key] as $doc)
-                                        <a href="{{ route('venue-documents.show', $doc) }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline dark:text-blue-400" wire:key="adoc-{{ $doc->id }}">
-                                            📄 {{ $doc->original_name }}
-                                        </a>
-                                    @endforeach
+                    <div class="space-y-2 py-3" wire:key="ver-{{ $key }}">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div class="min-w-0 flex-1 space-y-1">
+                                <div class="flex items-center gap-2">
+                                    @if ($venue->isItemVerified($key))
+                                        <flux:icon name="check-circle" variant="solid" class="size-5 text-green-600" />
+                                    @elseif ($venue->isItemRejected($key))
+                                        <flux:icon name="x-circle" variant="solid" class="size-5 text-red-600" />
+                                    @else
+                                        <flux:icon name="exclamation-circle" class="size-5 text-amber-500" />
+                                    @endif
+                                    <flux:text class="font-medium">{{ $item['label'] }}</flux:text>
                                 </div>
-                            @else
-                                <flux:text class="pt-1 text-sm text-red-500">No document uploaded by the owner yet.</flux:text>
-                            @endif
+                                <flux:text class="text-sm text-zinc-500">{{ $item['admin_hint'] }}</flux:text>
+
+                                @if (! empty($documents[$key]))
+                                    <div class="flex flex-wrap gap-3 pt-1 text-sm">
+                                        @foreach ($documents[$key] as $doc)
+                                            <a href="{{ route('venue-documents.show', $doc) }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline dark:text-blue-400" wire:key="adoc-{{ $doc->id }}">
+                                                📄 {{ $doc->original_name }}
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                @elseif ($venue->isItemRejected($key))
+                                    <flux:text class="pt-1 text-sm text-red-500">Rejected — “{{ $venue->itemRejectionReason($key) }}”. Waiting for the owner to re-upload.</flux:text>
+                                @else
+                                    <flux:text class="pt-1 text-sm text-red-500">No document uploaded by the owner yet.</flux:text>
+                                @endif
+                            </div>
+
+                            <div class="flex shrink-0 gap-2">
+                                <flux:button size="sm" :variant="$venue->isItemVerified($key) ? 'filled' : 'primary'"
+                                    :disabled="! $venue->isItemVerified($key) && empty($documents[$key])"
+                                    wire:click="toggleVerified('{{ $key }}')">
+                                    {{ $venue->isItemVerified($key) ? 'Verified ✓' : 'Mark verified' }}
+                                </flux:button>
+                                @if (! empty($documents[$key]) && ! $venue->isItemRejected($key))
+                                    <flux:button size="sm" variant="ghost" wire:click="startRejectItem('{{ $key }}')">Reject</flux:button>
+                                @endif
+                            </div>
                         </div>
 
-                        <flux:button size="sm" :variant="$venue->isItemVerified($key) ? 'filled' : 'primary'"
-                            :disabled="! $venue->isItemVerified($key) && empty($documents[$key])"
-                            wire:click="toggleVerified('{{ $key }}')">
-                            {{ $venue->isItemVerified($key) ? 'Verified ✓' : 'Mark verified' }}
-                        </flux:button>
+                        {{-- Per-item reject reason box --}}
+                        @if ($rejectingItem === $key)
+                            <div class="rounded-lg border border-red-200 bg-red-50 p-3 space-y-2 dark:border-red-900 dark:bg-red-950/30">
+                                <flux:textarea wire:model="itemReason" label="Why is this document rejected? (sent to the owner)"
+                                    placeholder="e.g. The SSM certificate is expired." rows="2" />
+                                <div class="flex gap-2">
+                                    <flux:button size="sm" variant="danger" wire:click="rejectItem">Reject this document</flux:button>
+                                    <flux:button size="sm" variant="ghost" wire:click="cancelRejectItem">Cancel</flux:button>
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 @endforeach
             </div>

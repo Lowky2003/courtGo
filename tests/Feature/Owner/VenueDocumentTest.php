@@ -116,6 +116,45 @@ test('the owner dashboard tells them to upload verification documents to go live
         ->assertSee('Upload your verification documents to go live');
 });
 
+test('uploading a document does not flash a success message (stays at the item)', function () {
+    Storage::fake('local');
+    $venue = Venue::factory()->pending()->create();
+
+    $this->actingAs($venue->owner)->post(route('owner.venues.documents.store', $venue), [
+        'type' => 'ssm',
+        'document' => UploadedFile::fake()->create('ssm.pdf', 20, 'application/pdf'),
+    ])->assertRedirect()->assertSessionMissing('status');
+});
+
+test('a rejected item shows the admin reason and re-uploading clears it (back to pending)', function () {
+    Storage::fake('local');
+    $venue = Venue::factory()->pending()->create(['item_rejections' => ['ssm' => 'The SSM certificate is expired.']]);
+
+    // Owner sees the per-item reason.
+    $this->actingAs($venue->owner)->get(route('owner.venues.profile', $venue))
+        ->assertOk()
+        ->assertSee('The SSM certificate is expired.')
+        ->assertSee('Rejected');
+
+    // Re-uploading clears that item's rejection.
+    $this->actingAs($venue->owner)->post(route('owner.venues.documents.store', $venue), [
+        'type' => 'ssm',
+        'document' => UploadedFile::fake()->create('ssm.pdf', 20, 'application/pdf'),
+    ])->assertRedirect();
+
+    $venue->refresh();
+    expect($venue->isItemRejected('ssm'))->toBeFalse()
+        ->and($venue->needsChanges())->toBeFalse();
+});
+
+test('an item-rejected venue shows a Rejected status on My Venues', function () {
+    $venue = Venue::factory()->pending()->create(['item_rejections' => ['ssm' => 'Re-upload a clearer copy.']]);
+
+    $this->actingAs($venue->owner)->get(route('owner.venues.index'))
+        ->assertOk()
+        ->assertSee('Rejected');
+});
+
 test('a rejected venue shows the reason to the owner on the profile', function () {
     $venue = Venue::factory()->pending()->create([
         'rejected_at' => now(),

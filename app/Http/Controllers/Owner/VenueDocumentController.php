@@ -53,7 +53,14 @@ class VenueDocumentController extends Controller
                 $updates['verified_items'] = array_values(array_diff($verified, [$type]));
             }
 
-            // Re-uploading after a rejection puts the venue back in the review queue.
+            // Re-uploading clears that item's rejection — it's back to pending review.
+            $rejections = $venue->item_rejections ?? [];
+            if (array_key_exists($type, $rejections)) {
+                unset($rejections[$type]);
+                $updates['item_rejections'] = $rejections ?: null;
+            }
+
+            // Re-uploading after a whole-venue rejection puts it back in the queue.
             if ($venue->rejected_at) {
                 $updates['rejected_at'] = null;
                 $updates['rejection_reason'] = null;
@@ -64,7 +71,8 @@ class VenueDocumentController extends Controller
             }
         }
 
-        return back()->with('status', config("courtgo.verification.{$type}.label").' uploaded.');
+        // Stay where they were (at this item), no top success message to jump to.
+        return back()->withFragment('doc-'.$type);
     }
 
     /** Owner removes one of their uploaded documents. */
@@ -74,9 +82,10 @@ class VenueDocumentController extends Controller
 
         abort_unless($document->venue_id === $venue->id, 404);
 
+        $type = $document->type;
         $document->delete();
 
-        return back()->with('status', 'Document removed.');
+        return back()->withFragment('doc-'.$type);
     }
 
     /**

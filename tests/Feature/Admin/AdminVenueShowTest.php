@@ -8,6 +8,7 @@ use App\Models\Venue;
 use App\Notifications\VenueApproved;
 use App\Notifications\VenueRejected;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 test('an admin can open a venue and see its information', function () {
@@ -142,6 +143,69 @@ test('rejecting requires a reason', function () {
 
     expect($venue->fresh()->isRejected())->toBeFalse();
     Notification::assertNothingSent();
+});
+
+test('an admin can reject a single verification item with a reason, which removes its file and un-verifies it', function () {
+    Storage::fake('local');
+    $venue = Venue::factory()->pending()->create(['verified_items' => ['ssm']]);
+    $venue->documents()->create(['type' => 'ssm', 'path' => 'venue-documents/ssm.pdf', 'original_name' => 'ssm.pdf']);
+    $admin = User::factory()->create(['role' => UserRole::Admin]);
+
+    Livewire::actingAs($admin)->test(VenueShow::class, ['venue' => $venue])
+        ->call('startRejectItem', 'ssm')
+        ->set('itemReason', 'The SSM certificate has expired.')
+        ->call('rejectItem')
+        ->assertHasNoErrors();
+
+    $venue->refresh();
+    expect($venue->isItemRejected('ssm'))->toBeTrue()
+        ->and($venue->itemRejectionReason('ssm'))->toContain('expired')
+        ->and($venue->isItemVerified('ssm'))->toBeFalse()
+        ->and($venue->documents()->where('type', 'ssm')->count())->toBe(0);
+});
+
+test('a rejected item cannot be marked verified until the owner re-uploads', function () {
+    $venue = Venue::factory()->pending()->create(['item_rejections' => ['ssm' => 'expired']]);
+    $admin = User::factory()->create(['role' => UserRole::Admin]);
+
+    Livewire::actingAs($admin)->test(VenueShow::class, ['venue' => $venue])
+        ->call('toggleVerified', 'ssm');
+
+    expect($venue->fresh()->isItemVerified('ssm'))->toBeFalse(); // no document → blocked
+});
+
+test('rejecting a single item requires a reason', function () {
+    $venue = Venue::factory()->pending()->create();
+    $venue->documents()->create(['type' => 'ssm', 'path' => 'p', 'original_name' => 'ssm.pdf']);
+    $admin = User::factory()->create(['role' => UserRole::Admin]);
+
+    Livewire::actingAs($admin)->test(VenueShow::class, ['venue' => $venue])
+        ->call('startRejectItem', 'ssm')
+        ->set('itemReason', '   ')
+        ->call('rejectItem')
+        ->assertHasErrors('itemReason');
+
+    expect($venue->fresh()->isItemRejected('ssm'))->toBeFalse();
+});
+
+test('whole-venue rejection removes every uploaded document', function () {
+    Notification::fake();
+    Storage::fake('local');
+    $venue = Venue::factory()->pending()->create();
+    foreach (Venue::verificationKeys() as $t) {
+        $venue->documents()->create(['type' => $t, 'path' => "venue-documents/{$t}.pdf", 'original_name' => "{$t}.pdf"]);
+    }
+    $admin = User::factory()->create(['role' => UserRole::Admin]);
+
+    Livewire::actingAs($admin)->test(VenueShow::class, ['venue' => $venue])
+        ->call('startReject')
+        ->set('rejectionReason', 'Everything needs redoing properly.')
+        ->call('reject');
+
+    $venue->refresh();
+    expect($venue->isRejected())->toBeTrue()
+        ->and($venue->documents()->count())->toBe(0);
+    Notification::assertSentTo($venue->owner, VenueRejected::class);
 });
 
 test('approving a previously rejected venue clears the rejection', function () {
