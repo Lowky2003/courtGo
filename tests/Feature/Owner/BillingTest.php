@@ -78,6 +78,25 @@ test('an owner cannot hit another owners checkout return', function () {
         ->assertForbidden();
 });
 
+test('returning from the billing portal redirects to billing', function () {
+    config()->set('cashier.secret', null); // no Stripe → no sync, just redirect
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+
+    $this->actingAs($owner)
+        ->get(route('owner.billing.portal.return'))
+        ->assertRedirect(route('owner.billing'));
+});
+
+test('the billing page shows a pending cancellation date', function () {
+    $venue = Venue::factory()->subscribed()->create();
+    // Subscription set to cancel at the end of the period (ends_at in the future).
+    $venue->owner->subscriptions()->first()->update(['ends_at' => now()->addDays(10)]);
+
+    $this->actingAs($venue->owner)->get(route('owner.billing'))
+        ->assertOk()
+        ->assertSee('Cancels'); // still subscribed, but shows it's ending
+});
+
 test('connecting a bank without stripe configured redirects back safely', function () {
     config()->set('cashier.secret', null);
     $owner = User::factory()->create(['role' => UserRole::Owner]);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Owner;
 use App\Http\Controllers\Controller;
 use App\Models\Venue;
 use App\Services\StripeConnectService;
+use App\Services\StripeSubscriptionSync;
 use Illuminate\Http\Request;
 
 class BillingController extends Controller
@@ -91,7 +92,9 @@ class BillingController extends Controller
         }
 
         try {
-            return $request->user()->redirectToBillingPortal(route('owner.billing'));
+            // Return to the sync handler so a change made in the portal (e.g. a
+            // cancellation) is reflected even without the webhook reaching us.
+            return $request->user()->redirectToBillingPortal(route('owner.billing.portal.return'));
         } catch (\Throwable $e) {
             report($e);
 
@@ -100,6 +103,18 @@ class BillingController extends Controller
                 "Couldn't open the Stripe billing portal. In test mode you have to enable it once: Stripe Dashboard → Settings → Billing → Customer portal → Activate."
             );
         }
+    }
+
+    /** Owner returns from the Stripe billing portal — sync any changes they made. */
+    public function portalReturn(Request $request, StripeSubscriptionSync $sync)
+    {
+        try {
+            $sync->forUser($request->user());
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return redirect()->route('owner.billing');
     }
 
     /** Send the owner to Stripe Connect onboarding to connect their bank. */

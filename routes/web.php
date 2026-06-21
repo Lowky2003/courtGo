@@ -63,6 +63,7 @@ Route::middleware(['auth', 'role:owner'])->prefix('owner')->name('owner.')->grou
     Route::get('/billing/subscribe/{venue}', [BillingController::class, 'subscribe'])->name('billing.subscribe');
     Route::get('/billing/subscribed/{venue}', [BillingController::class, 'subscribed'])->name('billing.subscribed');
     Route::get('/billing/portal', [BillingController::class, 'billingPortal'])->name('billing.portal');
+    Route::get('/billing/portal/return', [BillingController::class, 'portalReturn'])->name('billing.portal.return');
     Route::get('/connect', [BillingController::class, 'connect'])->name('connect.redirect');
     Route::get('/connect/return', [BillingController::class, 'connectReturn'])->name('connect.return');
     Route::get('/connect/refresh', [BillingController::class, 'connectRefresh'])->name('connect.refresh');

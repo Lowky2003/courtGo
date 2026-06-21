@@ -27,7 +27,8 @@
         @else
             <div class="divide-y divide-zinc-100 dark:divide-zinc-800">
                 @foreach ($venues as $venue)
-                    @php($subscribed = auth()->user()->subscribed($venue->subscriptionType()))
+                    @php($sub = auth()->user()->subscription($venue->subscriptionType()))
+                    @php($subscribed = $sub && $sub->valid())
                     <div class="flex flex-wrap items-center justify-between gap-3 py-3" wire:key="vsub-{{ $venue->id }}">
                         <div>
                             <div class="font-medium">{{ $venue->name }}</div>
@@ -35,7 +36,11 @@
                         </div>
                         <div class="flex items-center gap-2">
                             @if ($subscribed)
-                                <flux:badge color="green" size="sm">Subscribed</flux:badge>
+                                @if ($sub->onGracePeriod())
+                                    <flux:badge color="amber" size="sm">Cancels {{ $sub->ends_at->format('d M Y') }}</flux:badge>
+                                @else
+                                    <flux:badge color="green" size="sm">Subscribed</flux:badge>
+                                @endif
                                 <flux:button size="sm" variant="ghost" href="{{ route('owner.billing.portal') }}">Manage</flux:button>
                             @else
                                 <flux:badge color="zinc" size="sm">Not subscribed</flux:badge>
