@@ -60,20 +60,30 @@ class VenueMediaController extends Controller
     {
         $this->authorize('update', $venue);
 
-        $request->validate(['photo' => self::PHOTO_RULES]);
+        $request->validate([
+            'photos' => 'required|array',
+            'photos.*' => self::PHOTO_RULES,
+        ]);
 
-        if ($venue->photos()->count() >= self::GALLERY_LIMIT) {
+        $incoming = $request->file('photos');
+        $current = $venue->photos()->count();
+
+        if ($current + count($incoming) > self::GALLERY_LIMIT) {
             throw ValidationException::withMessages([
-                'photo' => 'You can upload up to '.self::GALLERY_LIMIT.' gallery photos.',
+                'photos' => 'You can upload up to '.self::GALLERY_LIMIT.' gallery photos (you already have '.$current.').',
             ]);
         }
 
-        $venue->photos()->create([
-            'path' => $request->file('photo')->store('venues/gallery', 'public'),
-            'position' => (int) $venue->photos()->max('position') + 1,
-        ]);
+        $position = (int) $venue->photos()->max('position');
 
-        return back()->with('status', 'Gallery photo added.');
+        foreach ($incoming as $file) {
+            $venue->photos()->create([
+                'path' => $file->store('venues/gallery', 'public'),
+                'position' => ++$position,
+            ]);
+        }
+
+        return back()->with('status', count($incoming).' photo(s) added.');
     }
 
     public function destroyPhoto(Venue $venue, VenuePhoto $photo)

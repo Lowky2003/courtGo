@@ -3,6 +3,7 @@
 namespace App\Livewire\Owner\Venues;
 
 use App\Models\Venue;
+use Flux\Flux;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -85,54 +86,60 @@ class Profile extends Component
         ]);
 
         $this->venue->update(['amenities' => $validated['amenities']]);
-
-        session()->flash('status', 'Amenities saved.');
+        // Silent: this autosaves on every toggle, so the ticked state is the feedback.
     }
 
     public function saveInfo(): void
     {
         $this->authorize('update', $this->venue);
 
-        $this->validate([
-            'openingHours.*.closed' => 'boolean',
-            'openingHours.*.open' => 'nullable|date_format:H:i',
-            'openingHours.*.close' => 'nullable|date_format:H:i',
-            'pricingNote' => 'nullable|string|max:255',
-            'announcement' => 'nullable|string|max:1000',
-            'announcementActive' => 'boolean',
-            // No after_or_equal:today — a past date just stops the announcement
-            // showing (see Venue::announcementVisible), it must not block saves.
-            'announcementUntil' => 'nullable|date',
-            'policy' => 'nullable|string|max:5000',
-            'contactPhone' => 'nullable|string|max:50',
-            'contactWhatsapp' => 'nullable|string|max:50',
-            'contactEmail' => 'nullable|email|max:255',
-            'contactWebsite' => 'nullable|url|max:255',
-            'contactInstagram' => 'nullable|string|max:255',
-            'contactFacebook' => 'nullable|string|max:255',
-        ]);
+        try {
+            $this->validate([
+                'openingHours.*.closed' => 'boolean',
+                'openingHours.*.open' => 'nullable|date_format:H:i',
+                'openingHours.*.close' => 'nullable|date_format:H:i',
+                'pricingNote' => 'nullable|string|max:255',
+                'announcement' => 'nullable|string|max:1000',
+                'announcementActive' => 'boolean',
+                // No after_or_equal:today — a past date just stops the announcement
+                // showing (see Venue::announcementVisible), it must not block saves.
+                'announcementUntil' => 'nullable|date',
+                'policy' => 'nullable|string|max:5000',
+                'contactPhone' => 'nullable|string|max:50',
+                'contactWhatsapp' => 'nullable|string|max:50',
+                'contactEmail' => 'nullable|email|max:255',
+                'contactWebsite' => 'nullable|url|max:255',
+                'contactInstagram' => 'nullable|string|max:255',
+                'contactFacebook' => 'nullable|string|max:255',
+            ]);
 
-        // Validate each open day's times: need both (or neither, = unset), and
-        // the closing time must be after the opening time.
-        foreach ($this->openingHours as $dow => $day) {
-            if (! empty($day['closed'])) {
-                continue;
+            // Validate each open day's times: need both (or neither, = unset), and
+            // the closing time must be after the opening time.
+            foreach ($this->openingHours as $dow => $day) {
+                if (! empty($day['closed'])) {
+                    continue;
+                }
+
+                $hasOpen = $day['open'] !== '';
+                $hasClose = $day['close'] !== '';
+
+                if ($hasOpen xor $hasClose) {
+                    throw ValidationException::withMessages([
+                        "openingHours.$dow.close" => 'Set both an opening and closing time, or mark the day closed.',
+                    ]);
+                }
+
+                if ($hasOpen && $hasClose && $day['close'] <= $day['open']) {
+                    throw ValidationException::withMessages([
+                        "openingHours.$dow.close" => 'Closing time must be after opening time.',
+                    ]);
+                }
             }
+        } catch (ValidationException $e) {
+            // Tell the page to scroll/focus the first error, then surface it.
+            $this->dispatch('profile-error');
 
-            $hasOpen = $day['open'] !== '';
-            $hasClose = $day['close'] !== '';
-
-            if ($hasOpen xor $hasClose) {
-                throw ValidationException::withMessages([
-                    "openingHours.$dow.close" => 'Set both an opening and closing time, or mark the day closed.',
-                ]);
-            }
-
-            if ($hasOpen && $hasClose && $day['close'] <= $day['open']) {
-                throw ValidationException::withMessages([
-                    "openingHours.$dow.close" => 'Closing time must be after opening time.',
-                ]);
-            }
+            throw $e;
         }
 
         $this->venue->update([
@@ -150,7 +157,7 @@ class Profile extends Component
             'contact_facebook' => $this->contactFacebook ?: null,
         ]);
 
-        session()->flash('status', 'Venue details saved.');
+        Flux::toast(variant: 'success', text: 'Venue details saved.');
     }
 
     public function render()

@@ -14,13 +14,50 @@ test('an owner can add a gallery photo', function () {
 
     $this->actingAs($owner)
         ->post(route('owner.venues.media.photos.store', $venue), [
-            'photo' => UploadedFile::fake()->image('court.jpg'),
+            'photos' => [UploadedFile::fake()->image('court.jpg')],
         ])
         ->assertRedirect();
 
     $photo = $venue->photos()->first();
     expect($photo)->not->toBeNull();
     Storage::disk('public')->assertExists($photo->path);
+});
+
+test('an owner can add several gallery photos at once', function () {
+    Storage::fake('public');
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->for($owner, 'owner')->create();
+
+    $this->actingAs($owner)
+        ->post(route('owner.venues.media.photos.store', $venue), [
+            'photos' => [
+                UploadedFile::fake()->image('a.jpg'),
+                UploadedFile::fake()->image('b.jpg'),
+                UploadedFile::fake()->image('c.jpg'),
+            ],
+        ])
+        ->assertRedirect();
+
+    expect($venue->photos()->count())->toBe(3);
+});
+
+test('a multi-upload that would exceed the 12-photo cap is rejected entirely', function () {
+    Storage::fake('public');
+    $owner = User::factory()->create(['role' => UserRole::Owner]);
+    $venue = Venue::factory()->for($owner, 'owner')->create();
+    VenuePhoto::factory()->count(10)->for($venue)->create(); // 10 existing; +3 would be 13
+
+    $this->actingAs($owner)
+        ->post(route('owner.venues.media.photos.store', $venue), [
+            'photos' => [
+                UploadedFile::fake()->image('a.jpg'),
+                UploadedFile::fake()->image('b.jpg'),
+                UploadedFile::fake()->image('c.jpg'),
+            ],
+        ])
+        ->assertSessionHasErrors('photos');
+
+    expect($venue->photos()->count())->toBe(10); // none added
 });
 
 test('an owner can remove a gallery photo', function () {
@@ -46,9 +83,9 @@ test('the gallery is capped at 12 photos', function () {
 
     $this->actingAs($owner)
         ->post(route('owner.venues.media.photos.store', $venue), [
-            'photo' => UploadedFile::fake()->image('court.jpg'),
+            'photos' => [UploadedFile::fake()->image('court.jpg')],
         ])
-        ->assertSessionHasErrors('photo');
+        ->assertSessionHasErrors('photos');
 
     expect($venue->photos()->count())->toBe(12);
 });
@@ -89,9 +126,9 @@ test('a non-raster (svg) upload is rejected', function () {
 
     $this->actingAs($owner)
         ->post(route('owner.venues.media.photos.store', $venue), [
-            'photo' => UploadedFile::fake()->create('logo.svg', 10, 'image/svg+xml'),
+            'photos' => [UploadedFile::fake()->create('logo.svg', 10, 'image/svg+xml')],
         ])
-        ->assertSessionHasErrors('photo');
+        ->assertSessionHasErrors('photos.0');
 });
 
 test('an owner cannot add a photo to another owners venue', function () {
@@ -100,7 +137,7 @@ test('an owner cannot add a photo to another owners venue', function () {
 
     $this->actingAs($owner)
         ->post(route('owner.venues.media.photos.store', $venue), [
-            'photo' => UploadedFile::fake()->image('court.jpg'),
+            'photos' => [UploadedFile::fake()->image('court.jpg')],
         ])
         ->assertForbidden();
 });

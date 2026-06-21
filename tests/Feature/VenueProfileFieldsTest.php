@@ -86,7 +86,8 @@ test('saving details rejects a bad email and a backwards opening time', function
         ->test(Profile::class, ['venue' => $venue])
         ->set('contactEmail', 'not-an-email')
         ->call('saveInfo')
-        ->assertHasErrors('contactEmail');
+        ->assertHasErrors('contactEmail')
+        ->assertDispatched('profile-error'); // tells the page to jump to the error
 
     Livewire::actingAs($owner)
         ->test(Profile::class, ['venue' => $venue])
@@ -94,7 +95,8 @@ test('saving details rejects a bad email and a backwards opening time', function
         ->set('openingHours.1.open', '22:00')
         ->set('openingHours.1.close', '08:00')
         ->call('saveInfo')
-        ->assertHasErrors('openingHours.1.close');
+        ->assertHasErrors('openingHours.1.close')
+        ->assertDispatched('profile-error');
 });
 
 test('a half-filled opening day (only one time) is rejected', function () {
@@ -107,7 +109,8 @@ test('a half-filled opening day (only one time) is rejected', function () {
         ->set('openingHours.1.open', '08:00')
         ->set('openingHours.1.close', '') // only one time set
         ->call('saveInfo')
-        ->assertHasErrors('openingHours.1.close');
+        ->assertHasErrors('openingHours.1.close')
+        ->assertDispatched('profile-error');
 });
 
 test('details still save when the stored announcement date is already in the past', function () {

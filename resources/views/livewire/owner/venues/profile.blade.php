@@ -27,8 +27,16 @@
     </div>
 
     {{-- Venue details (Livewire) --}}
-    <div class="space-y-5 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
+    <div id="venue-details" class="space-y-5 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5"
+         x-data
+         x-on:profile-error.window="$nextTick(() => { $el.scrollIntoView({ behavior: 'smooth', block: 'start' }); $el.querySelector('[aria-invalid=\'true\'], [data-invalid]')?.focus?.(); })">
         <flux:heading size="lg">Venue details</flux:heading>
+
+        @if ($errors->any())
+            <flux:callout variant="danger" icon="exclamation-triangle">
+                <flux:callout.heading>Please fix the highlighted fields below.</flux:callout.heading>
+            </flux:callout>
+        @endif
 
         {{-- Announcement --}}
         <div class="space-y-2">
@@ -110,10 +118,13 @@
         @endif
 
         @if ($photos->count() < 12)
-            <form method="POST" action="{{ route('owner.venues.media.photos.store', $venue) }}" enctype="multipart/form-data" class="flex items-center gap-3">
+            <form method="POST" action="{{ route('owner.venues.media.photos.store', $venue) }}" enctype="multipart/form-data" class="space-y-1">
                 @csrf
-                <input type="file" name="photo" accept="image/*" required class="text-sm" />
-                <flux:button type="submit" variant="primary" size="sm">Add photo</flux:button>
+                <div class="flex items-center gap-3">
+                    <input type="file" name="photos[]" accept="image/*" multiple required class="text-sm" />
+                    <flux:button type="submit" variant="primary" size="sm">Add photos</flux:button>
+                </div>
+                <flux:text class="text-xs text-zinc-400">Pick several at once — up to {{ 12 - $photos->count() }} more.</flux:text>
             </form>
         @else
             <flux:text class="text-sm text-zinc-400">Gallery is full (12 photos).</flux:text>
