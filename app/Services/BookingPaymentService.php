@@ -49,14 +49,17 @@ class BookingPaymentService
             'quantity' => 1,
         ])->all();
 
+        // Only do a destination charge when the owner has a real Stripe Connect account.
+        // The seeder uses 'acct_demo' as a placeholder, which Stripe rejects.
+        $paymentIntentData = ['metadata' => ['booking_ids' => $ids]];
+        if ($ownerAccountId && $ownerAccountId !== 'acct_demo') {
+            $paymentIntentData['transfer_data'] = ['destination' => $ownerAccountId];
+        }
+
         $session = Cashier::stripe()->checkout->sessions->create([
             'mode' => 'payment',
             'line_items' => $lineItems,
-            'payment_intent_data' => [
-                // Destination charge to the owner; 0% platform fee → no application_fee_amount.
-                'transfer_data' => ['destination' => $ownerAccountId],
-                'metadata' => ['booking_ids' => $ids],
-            ],
+            'payment_intent_data' => $paymentIntentData,
             'metadata' => ['booking_ids' => $ids],
             'success_url' => $successUrl,
             'cancel_url' => $cancelUrl,
